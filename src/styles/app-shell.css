@@ -1,0 +1,33 @@
+/* App shell: anchored header/footer; body-only scroll (ADR 0021 / 0020) */
+html.app-shell-lock,
+html.app-shell-lock body {
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+}
+
+html.app-shell-lock body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
+html.app-shell-lock #root {
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.app-shell {
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+}
+
+.app-shell-body {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
