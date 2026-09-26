@@ -116,19 +116,32 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 
 ## Deploy
 
-Workflow: `.github/workflows/deploy-vercel.yml`.
+Workflow: `.github/workflows/deploy-vercel.yml` (ADR 0025).
+
+Production default branch: **`master`**. Production project: **`tonni-games`**. On-demand / exploratory deploys use **`tonni-games-dev`** (separate Vercel project) — not this production path.
 
 | Job | When | What |
 | --- | --- |
-| `build` | PRs + `main` | `pnpm test` + `pnpm build` |
-| **Verify Vercel build** (`vercel-build`) | PRs + `main` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
-| **Deploy production (hook)** | `push` to `main` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). Skipped on PRs. |
+| `build` | PRs + `master` | `pnpm test` + `pnpm build` |
+| **Verify Vercel build** (`vercel-build`) | PRs + `master` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
+| **Deploy production (hook)** | `push` to `master` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). **Never** on `pull_request`. |
+
+### Manual deploy (Taylor)
+
+1. Open [Actions → Deploy to Vercel](https://github.com/FerrisWeil/tonni-games/actions/workflows/deploy-vercel.yml).
+2. Click **Run workflow**.
+3. Choose branch **`master`**, then **Run workflow**.
+4. Wait for `build` + **Verify Vercel build** + **Deploy production (hook)**. The hook only queues the Vercel job; check the [Vercel dashboard](https://vercel.com/ferrisweils-projects/tonni-games) for READY.
+
+Merging a PR into **`master`** also runs the Deploy Hook once (same as above). PR branches do **not** deploy production.
+
+After the `main` → `master` rename: recreate the Deploy Hook for branch **`master`** under Vercel → Project → Settings → Git → Deploy Hooks, then set repo secret `VERCEL_DEPLOY_HOOK_URL` to the new URL.
 
 ### Secrets
 
 | Secret | Required? | Notes |
 | --- | --- |
-| `VERCEL_DEPLOY_HOOK_URL` | Optional | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated. |
+| `VERCEL_DEPLOY_HOOK_URL` | Optional | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated (required after `master` rename if the old hook targeted `main`). |
 | `VERCEL_TOKEN` | **Not used by current GHA** | Past tokens authenticate but **404 / cannot read project settings** for `tonni-games` (`vercel pull` → “Could not retrieve Project Settings”). Do **not** rely on CLI deploy until rotated. |
 | `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Optional (CLI only) | Team `team_xNSXW3QfytHiY0cKnRgj222W` (`ferrisweils-projects`), project `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`. |
 
@@ -138,12 +151,14 @@ To restore CLI `vercel pull` + `vercel build` verification later: create a Verce
 
 Vercel Hobby caps daily deployments. Preview builds on every PR commit burned that quota and left a red **Vercel** Git status (`Deployment rate limited`) even when GHA **Verify Vercel build** was green.
 
-**Mitigation (in repo + project):**
+**Mitigation (in repo + project) — ADR 0025:**
 
-- Preview deployments are **disabled** on the Vercel project (`previewDeploymentsDisabled`).
-- `vercel.json` `ignoreCommand` skips non-`main` Git builds so PR branches do not consume quota.
-- Production promote is **Deploy Hook only** from GHA on `main` / `workflow_dispatch` (never `vercel` CLI — `VERCEL_TOKEN` still cannot read this project).
+- Preview deployments are **disabled** on production (`previewDeploymentsDisabled`).
+- `vercel.json` `git.deploymentEnabled: false` — no automatic Git deploys (PRs/forks/`master` pushes do not create Vercel builds by themselves).
+- `ignoreCommand` still skips non-`master` if Git deploys are re-enabled (Deploy Hooks for `master` still build).
+- Production promote is **Deploy Hook only** from GHA on `master` / `workflow_dispatch` (never `vercel` CLI — `VERCEL_TOKEN` still cannot read this project).
+- Use **`tonni-games-dev`** for on-demand deploys so production stays thrifty.
 
 Merge gate = GHA `build` + **Verify Vercel build**. Do not treat the Vercel Git status as the merge gate while on Hobby.
 
-Avoid thrashing Vercel Hobby daily deploy quota (prefer Deploy Hook + disabled previews over CLI/`vercel deploy`).
+Avoid thrashing Vercel Hobby daily deploy quota (prefer Deploy Hook + disabled Git auto-deploys over CLI/`vercel deploy`).
