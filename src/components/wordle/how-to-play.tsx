@@ -17,7 +17,9 @@ export function HowToPlayDialog({ open, onOpenChange }: HowToPlayDialogProps) {
       <ul className="space-y-3 text-sm text-[var(--ink)]">
         <li>Each guess must be a valid 5-letter word. Hit Enter to submit.</li>
         <li>
-          After each guess, tiles change color to show how close you were.
+          After each guess, tiles change color <em>and</em> pattern: solid
+          highlight = correct spot, diagonal stripes = wrong spot, dim ring =
+          not in the word.
         </li>
       </ul>
 
@@ -60,16 +62,26 @@ function Example({
   note: ReactNode;
 }) {
   const color: Record<string, string> = {
-    correct: "bg-[var(--tile-correct)] text-white border-transparent",
-    present: "bg-[var(--tile-present)] text-white border-transparent",
-    absent: "bg-[var(--tile-absent)] text-white border-transparent",
+    correct:
+      "bg-[var(--tile-correct)] text-white border-transparent tile-pattern-correct",
+    present:
+      "bg-[var(--tile-present)] text-white border-transparent tile-pattern-present",
+    absent:
+      "bg-[var(--tile-absent)] text-white border-transparent tile-pattern-absent",
   };
+  const stateWord = {
+    correct: "correct",
+    present: "present",
+    absent: "absent",
+  } as const;
   return (
     <div>
       <div className="mb-1.5 flex gap-1">
         {word.split("").map((ch, i) => (
           <div
             key={i}
+            role="img"
+            aria-label={`${ch.toUpperCase()}, ${stateWord[states[i]]}`}
             className={`flex h-10 w-10 items-center justify-center border-2 text-lg font-bold uppercase ${color[states[i]]}`}
           >
             {ch}
