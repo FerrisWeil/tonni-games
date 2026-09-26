@@ -10,21 +10,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: cursor/sign-in-supabase-e858
-      - name: Assemble lockfile from parts
+      - name: Download canonical lockfile
         run: |
           set -euo pipefail
-          : > pnpm-lock.yaml
-          for f in $(ls lock-parts/*.part | sort); do
-            cat "$f" >> pnpm-lock.yaml
-          done
+          curl -fsSL -o pnpm-lock.yaml \
+            "https://gist.githubusercontent.com/FerrisWeil/28d0e2987380af4a6b80049f55d5ac8d/raw/be779274fa883c43c9998a0247c9512b749925d6/pnpm-lock.yaml"
           wc -c pnpm-lock.yaml
           md5sum pnpm-lock.yaml
+          head -c 40 pnpm-lock.yaml; echo
           test "$(wc -c < pnpm-lock.yaml)" -eq 46791
           test "$(md5sum pnpm-lock.yaml | awk '{print $1}')" = "e653e38eef2d10073c8bfd5dd6c6c207"
+          test "$(head -c 16 pnpm-lock.yaml)" = "lockfileVersion:"
+          ! grep -q PLACEHOLDER pnpm-lock.yaml
+          grep -q "@supabase/supabase-js" pnpm-lock.yaml
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add pnpm-lock.yaml
-          git commit -m "fix: restore complete pnpm-lock.yaml for @supabase/supabase-js"
+          git commit -m "fix: restore complete pnpm-lock.yaml for @supabase/supabase-js" || echo "No changes"
           git push origin HEAD:cursor/sign-in-supabase-e858
