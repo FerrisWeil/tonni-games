@@ -19,7 +19,8 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 | Route | What |
 | --- | --- |
-| `/` | Home — button to Wordle |
+| `/` | Home — Play Wordle + Themes |
+| `/themes` | Built-in theme picker (persists) |
 | `/wordle` | Playable Wordle (direct URL) |
 
 ```bash
@@ -43,23 +44,39 @@ VITE_WORDLE_SOURCE=nyt pnpm dev
 
 Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `/api/wordle-nyt/{YYYY-MM-DD}` (Vite proxy in dev; Vercel serverless in prod). If the fetch fails, the game falls back to the local list and shows a toast.
 
-## Theme
+## Themes
 
-Dark mode follows **system** `prefers-color-scheme` by default. Use the sun / moon / monitor button (home + Wordle header) to cycle **system → light → dark**; the choice is stored in `localStorage` under `tonni-theme-v1`.
+Open **Themes** from home (`/themes`) or the palette icon in the Wordle header. Built-ins:
+
+| Id | Name | Notes |
+| --- | --- | --- |
+| `system` | System | Classic by day, Midnight by night (`prefers-color-scheme`) |
+| `classic` | Classic | Tonni default light |
+| `midnight` | Midnight | Tonni dark |
+| `high-contrast` | High Contrast | Near-black / white chrome |
+| `meadow` | Meadow | Warm parchment + moss/ochre |
+
+Selection is stored in `localStorage` under `tonni-theme-v2` (migrates legacy `tonni-theme-v1` light/dark/system). Games read CSS variables (`--background`, `--tile-correct`, `--key-bg`, …) — not hardcoded colors.
+
+### Extending themes
+
+Add a `ThemeDefinition` in `src/themes/registry.ts` (or call `registerTheme()` at runtime). Board/keyboard already consume tokens; no game rewrites needed. See comments at the top of the registry.
 
 ## Testing
 
-Vitest unit tests ship with the app (`pnpm test`), including theme resolve / `data-theme` apply. Full Playwright PR matrix follows ADR 0008 / the testing strategy plan — **not required to ship** playable Wordle (no nightly for now).
+Vitest unit tests ship with the app (`pnpm test`), including theme registry / resolve / persist / apply. Full Playwright PR matrix follows ADR 0008 / the testing strategy plan — **not required to ship** playable Wordle (no nightly for now).
 
 ## Where the game lives
 
 | Path | Role |
 | --- | --- |
 | `src/pages/home.tsx` | Minimal home (`/`) |
+| `src/pages/themes.tsx` | Theme picker (`/themes`) |
 | `src/pages/wordle.tsx` | Wordle route (`/wordle`) |
 | `src/components/wordle/` | Board, keyboard, stats, how-to-play UI |
-| `src/components/theme-*` | Dark mode provider + toggle |
-| `src/lib/theme.ts` | Theme preference resolve / persist / apply |
+| `src/themes/registry.ts` | Built-in theme tokens + extension point |
+| `src/components/theme-*` | Theme provider + palette link |
+| `src/lib/theme.ts` | Selection resolve / persist / apply |
 | `src/lib/daily.ts` | Deterministic day → solution (default) |
 | `src/lib/nyt-wordle.ts` | Opt-in NYT JSON parse + fetch (spike) |
 | `api/wordle-nyt/[date].ts` | Vercel proxy for NYT `svc/wordle/v2` |

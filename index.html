@@ -25,21 +25,42 @@
     <script>
       (function () {
         try {
-          var key = "tonni-theme-v1";
-          var stored = localStorage.getItem(key);
-          var pref =
-            stored === "light" || stored === "dark" || stored === "system"
-              ? stored
-              : "system";
-          var dark =
-            pref === "dark" ||
-            (pref === "system" &&
-              window.matchMedia("(prefers-color-scheme: dark)").matches);
-          var theme = dark ? "dark" : "light";
-          document.documentElement.setAttribute("data-theme", theme);
-          document.documentElement.style.colorScheme = theme;
+          var LIGHT = "classic";
+          var DARK = "midnight";
+          var KNOWN = {
+            classic: true,
+            midnight: true,
+            "high-contrast": true,
+            meadow: true,
+          };
+          var LEGACY = { system: "system", light: LIGHT, dark: DARK };
+          var TOKENS = {
+            classic: { bg: "#e8efe6", scheme: "light" },
+            midnight: { bg: "#121a16", scheme: "dark" },
+            "high-contrast": { bg: "#0a0a0a", scheme: "dark" },
+            meadow: { bg: "#f3eee3", scheme: "light" },
+          };
+          var stored =
+            localStorage.getItem("tonni-theme-v2") ||
+            localStorage.getItem("tonni-theme-v1");
+          var selection = "system";
+          if (stored && KNOWN[stored]) selection = stored;
+          else if (stored && LEGACY[stored]) selection = LEGACY[stored];
+          var id =
+            selection === "system"
+              ? window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? DARK
+                : LIGHT
+              : selection;
+          var info = TOKENS[id] || TOKENS[LIGHT];
+          document.documentElement.setAttribute("data-theme", id);
+          document.documentElement.setAttribute(
+            "data-color-scheme",
+            info.scheme,
+          );
+          document.documentElement.style.colorScheme = info.scheme;
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute("content", dark ? "#121a16" : "#e8efe6");
+          if (meta) meta.setAttribute("content", info.bg);
         } catch (e) {}
       })();
     </script>
