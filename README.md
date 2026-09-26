@@ -1,2 +1,9 @@
-# tonni-games
-Free NYT-style puzzle games for Tonni — no play limits, no paywall. Vercel web app; Wordle first.
+# Tonni Games
+
+A Vercel-deployed web app — a free, Tonni-dedicated collection of NYT-style puzzle games that usually have limited play or a paywall.
+
+**No play limits. No paywall.**
+
+## What's first
+
+Wordle is the first game. More puzzle favorites will follow.
