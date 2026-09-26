@@ -1,86 +1,167 @@
-export type ThemePreference = "system" | "light" | "dark";
-export type ResolvedTheme = "light" | "dark";
+/**
+ * Theme preference resolve / persist / apply.
+ * Extends ADR 0011 dark mode into ADR 0012 named themes.
+ *
+ * Selection values: "system" | built-in theme id (classic, midnight, …).
+ * "system" resolves to Classic (light OS) or Midnight (dark OS).
+ */
 
-export const THEME_STORAGE_KEY = "tonni-theme-v1";
+import {
+  DEFAULT_DARK_THEME_ID,
+  DEFAULT_LIGHT_THEME_ID,
+  TOKEN_CSS_VARS,
+  getThemeById,
+  isThemeId,
+  type ColorScheme,
+  type ThemeDefinition,
+  type ThemeTokens,
+} from "@/themes/registry";
 
-const THEME_COLOR = {
-  light: "#e8efe6",
-  dark: "#121a16",
-} as const;
+/** Persisted selection: follow OS, or a concrete theme id. */
+export type ThemeSelection = "system" | string;
 
-export function isThemePreference(value: unknown): value is ThemePreference {
-  return value === "system" || value === "light" || value === "dark";
+export type ResolvedTheme = {
+  id: string;
+  definition: ThemeDefinition;
+  colorScheme: ColorScheme;
+};
+
+/** v2 stores named theme ids; v1 was system|light|dark. */
+export const THEME_STORAGE_KEY = "tonni-theme-v2";
+export const LEGACY_THEME_STORAGE_KEY = "tonni-theme-v1";
+
+const LEGACY_MAP: Record<string, ThemeSelection> = {
+  system: "system",
+  light: DEFAULT_LIGHT_THEME_ID,
+  dark: DEFAULT_DARK_THEME_ID,
+};
+
+export function isThemeSelection(value: unknown): value is ThemeSelection {
+  return value === "system" || isThemeId(value);
 }
 
-export function loadThemePreference(
+export function loadThemeSelection(
   storage: Pick<Storage, "getItem"> | null = defaultStorage(),
-): ThemePreference {
+): ThemeSelection {
   if (!storage) return "system";
   try {
-    const raw = storage.getItem(THEME_STORAGE_KEY);
-    return isThemePreference(raw) ? raw : "system";
+    const v2 = storage.getItem(THEME_STORAGE_KEY);
+    if (isThemeSelection(v2)) return v2;
+
+    const v1 = storage.getItem(LEGACY_THEME_STORAGE_KEY);
+    if (v1 && v1 in LEGACY_MAP) return LEGACY_MAP[v1]!;
+    return "system";
   } catch {
     return "system";
   }
 }
 
-export function saveThemePreference(
-  preference: ThemePreference,
+export function saveThemeSelection(
+  selection: ThemeSelection,
   storage: Pick<Storage, "setItem"> | null = defaultStorage(),
 ): void {
   if (!storage) return;
   try {
-    storage.setItem(THEME_STORAGE_KEY, preference);
+    storage.setItem(THEME_STORAGE_KEY, selection);
   } catch {
     // Ignore quota / private-mode failures.
   }
 }
 
-export function resolveTheme(
-  preference: ThemePreference,
+export function resolveThemeSelection(
+  selection: ThemeSelection,
   systemDark: boolean,
 ): ResolvedTheme {
-  if (preference === "light") return "light";
-  if (preference === "dark") return "dark";
-  return systemDark ? "dark" : "light";
+  const id =
+    selection === "system"
+      ? systemDark
+        ? DEFAULT_DARK_THEME_ID
+        : DEFAULT_LIGHT_THEME_ID
+      : selection;
+
+  const definition = getThemeById(id) ?? getThemeById(DEFAULT_LIGHT_THEME_ID)!;
+  return {
+    id: definition.id,
+    definition,
+    colorScheme: definition.colorScheme,
+  };
 }
 
-export function cycleThemePreference(
-  preference: ThemePreference,
-): ThemePreference {
-  if (preference === "system") return "light";
-  if (preference === "light") return "dark";
-  return "system";
+/** Cycle: system → classic → midnight → high-contrast → meadow → system */
+export function cycleThemeSelection(
+  selection: ThemeSelection,
+  themeIds: string[] = [
+    DEFAULT_LIGHT_THEME_ID,
+    DEFAULT_DARK_THEME_ID,
+    "high-contrast",
+    "meadow",
+  ],
+): ThemeSelection {
+  if (selection === "system") return themeIds[0] ?? DEFAULT_LIGHT_THEME_ID;
+  const idx = themeIds.indexOf(selection);
+  if (idx === -1 || idx === themeIds.length - 1) return "system";
+  return themeIds[idx + 1]!;
 }
 
-export function themePreferenceLabel(preference: ThemePreference): string {
-  if (preference === "system") return "Theme: system";
-  if (preference === "light") return "Theme: light";
-  return "Theme: dark";
+export function themeSelectionLabel(
+  selection: ThemeSelection,
+  resolved?: ResolvedTheme,
+): string {
+  if (selection === "system") {
+    const name = resolved?.definition.name ?? "system";
+    return `Theme: system (${name})`;
+  }
+  const theme = getThemeById(selection);
+  return theme ? `Theme: ${theme.name}` : `Theme: ${selection}`;
 }
 
-export function themeColorFor(theme: ResolvedTheme): string {
-  return THEME_COLOR[theme];
+export function themeColorFor(tokens: ThemeTokens): string {
+  return tokens.themeColor;
 }
 
 type ThemeRoot = {
   setAttribute: (name: string, value: string) => void;
-  style: { colorScheme: string };
+  style: {
+    colorScheme: string;
+    setProperty: (name: string, value: string) => void;
+  };
 };
 
 type ThemeMeta = {
   setAttribute: (name: string, value: string) => void;
 };
 
+/** Apply resolved theme tokens onto the document root. */
 export function applyResolvedTheme(
-  theme: ResolvedTheme,
+  resolved: ResolvedTheme,
   root: ThemeRoot,
   meta?: ThemeMeta | null,
 ): void {
-  root.setAttribute("data-theme", theme);
-  root.style.colorScheme = theme;
-  meta?.setAttribute("content", themeColorFor(theme));
+  const { definition, colorScheme } = resolved;
+  root.setAttribute("data-theme", definition.id);
+  root.setAttribute("data-color-scheme", colorScheme);
+  root.style.colorScheme = colorScheme;
+
+  for (const key of Object.keys(TOKEN_CSS_VARS) as (keyof ThemeTokens)[]) {
+    root.style.setProperty(TOKEN_CSS_VARS[key], definition.tokens[key]);
+  }
+
+  meta?.setAttribute("content", themeColorFor(definition.tokens));
 }
+
+// --- Back-compat aliases used by dark-mode PR surface ---
+/** @deprecated Prefer ThemeSelection */
+export type ThemePreference = ThemeSelection;
+/** @deprecated Prefer loadThemeSelection */
+export const loadThemePreference = loadThemeSelection;
+/** @deprecated Prefer saveThemeSelection */
+export const saveThemePreference = saveThemeSelection;
+/** @deprecated Prefer cycleThemeSelection */
+export const cycleThemePreference = cycleThemeSelection;
+/** @deprecated Prefer themeSelectionLabel */
+export const themePreferenceLabel = themeSelectionLabel;
+/** @deprecated Prefer isThemeSelection */
+export const isThemePreference = isThemeSelection;
 
 function defaultStorage(): Pick<Storage, "getItem" | "setItem"> | null {
   if (typeof window === "undefined" || !window.localStorage) return null;
