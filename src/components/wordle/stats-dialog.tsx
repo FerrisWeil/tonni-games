@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Modal } from "@/components/ui/modal";
+import { buildShareText, copyShareText } from "@/lib/share";
 import { winPercent } from "@/lib/storage";
 import type { Stats } from "@/lib/types";
 
@@ -9,6 +10,8 @@ interface StatsDialogProps {
   stats: Stats;
   status: "playing" | "won" | "lost";
   solution?: string;
+  guesses?: string[];
+  puzzleNumber?: number;
 }
 
 export function StatsDialog({
@@ -17,13 +20,35 @@ export function StatsDialog({
   stats,
   status,
   solution,
+  guesses = [],
+  puzzleNumber = 0,
 }: StatsDialogProps) {
   const maxBar = Math.max(1, ...stats.guessDistribution);
+  const [shareNote, setShareNote] = useState<string | null>(null);
 
-  let description: ReactNode = "Your Tonni Wordle track record.";
+  let description: ReactNode = "Played on this device — nothing to sign in for.";
   if (status === "won") description = "Nice work — see you tomorrow.";
   if (status === "lost" && solution) {
     description = `The word was ${solution.toUpperCase()}.`;
+  }
+
+  const canShare =
+    (status === "won" || status === "lost") &&
+    guesses.length > 0 &&
+    !!solution &&
+    puzzleNumber > 0;
+
+  async function onShare() {
+    if (!canShare || !solution) return;
+    const payload = buildShareText({
+      puzzleNumber,
+      guesses,
+      solution,
+      won: status === "won",
+    });
+    const ok = await copyShareText(payload.clipboard);
+    setShareNote(ok ? "Copied results to clipboard" : "Couldn't copy — try again");
+    window.setTimeout(() => setShareNote(null), 1800);
   }
 
   return (
@@ -37,7 +62,7 @@ export function StatsDialog({
         <Stat value={stats.played} label="Played" />
         <Stat value={winPercent(stats)} label="Win %" />
         <Stat value={stats.currentStreak} label="Streak" />
-        <Stat value={stats.maxStreak} label="Max Streak" />
+        <Stat value={stats.maxStreak} label="Max" />
       </div>
 
       <div className="mt-6">
@@ -62,6 +87,30 @@ export function StatsDialog({
           ))}
         </div>
       </div>
+
+      {canShare ? (
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => void onShare()}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[var(--accent-brand)] px-4 text-sm font-bold tracking-wide text-white uppercase transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
+            style={{ touchAction: "manipulation" }}
+          >
+            Share
+          </button>
+          <p className="mt-2 text-center text-xs text-[var(--ink-muted)]">
+            Copies a spoiler-free grid plus a short text summary.
+          </p>
+          <div className="sr-only" aria-live="polite">
+            {shareNote ?? ""}
+          </div>
+          {shareNote ? (
+            <p className="mt-2 text-center text-sm font-semibold text-[var(--accent-brand)]" aria-hidden>
+              {shareNote}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </Modal>
   );
 }
