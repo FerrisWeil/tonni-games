@@ -128,4 +128,16 @@ Workflow: `.github/workflows/deploy-vercel.yml`.
 
 To restore CLI `vercel pull` + `vercel build` verification later: create a Vercel token that can **read** team **ferrisweils-projects** / project **tonni-games** (account-level token owned by a member of that team, or a token scoped to that project), set `VERCEL_TOKEN` (+ org/project IDs), then switch the verify job to `vercel pull --yes --environment=preview` + `vercel build`. Until then, the local parity job is the merge gate; production promote stays on the Deploy Hook.
 
-Avoid thrashing Vercel Hobby daily deploy quota.
+### Hobby rate limits / previews
+
+Vercel Hobby caps daily deployments. Preview builds on every PR commit burned that quota and left a red **Vercel** Git status (`Deployment rate limited`) even when GHA **Verify Vercel build** was green.
+
+**Mitigation (in repo + project):**
+
+- Preview deployments are **disabled** on the Vercel project (`previewDeploymentsDisabled`).
+- `vercel.json` `ignoreCommand` skips non-`main` Git builds so PR branches do not consume quota.
+- Production promote is **Deploy Hook only** from GHA on `main` / `workflow_dispatch` (never `vercel` CLI — `VERCEL_TOKEN` still cannot read this project).
+
+Merge gate = GHA `build` + **Verify Vercel build**. Do not treat the Vercel Git status as the merge gate while on Hobby.
+
+Avoid thrashing Vercel Hobby daily deploy quota (prefer Deploy Hook + disabled previews over CLI/`vercel deploy`).
