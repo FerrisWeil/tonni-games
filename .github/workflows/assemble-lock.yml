@@ -1,0 +1,43 @@
+name: Assemble pnpm-lock
+on:
+  push:
+    paths:
+      - 'lock-parts/**'
+      - '.github/workflows/assemble-lock.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Concatenate lock parts
+        run: |
+          set -euo pipefail
+          test -f lock-parts/00.part
+          test -f lock-parts/01.part
+          test -f lock-parts/02.part
+          test -f lock-parts/03.part
+          test -f lock-parts/04.part
+          test -f lock-parts/05.part
+          test -f lock-parts/06.part
+          cat lock-parts/00.part lock-parts/01.part lock-parts/02.part \
+              lock-parts/03.part lock-parts/04.part lock-parts/05.part \
+              lock-parts/06.part > pnpm-lock.yaml
+          wc -c pnpm-lock.yaml
+          test "$(wc -c < pnpm-lock.yaml)" -eq 44657
+      - name: Commit assembled lockfile
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "No lockfile changes"
+            exit 0
+          fi
+          git commit -m "chore: assemble full pnpm-lock.yaml (44657 bytes)"
+          git push
