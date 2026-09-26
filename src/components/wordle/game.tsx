@@ -157,7 +157,8 @@ export function WordleGame() {
         nextGuesses.length,
       );
       setStats(updated);
-      const delay = prefersReducedMotion() ? 200 : 900;
+      // Protect the win/lose moment: toast first, then stats (UX research).
+      const juiceMs = prefersReducedMotion() ? 120 : 700;
       setTimeout(() => {
         if (nextStatus === "won") {
           showToast("Magnificent!", 2000);
@@ -166,8 +167,9 @@ export function WordleGame() {
           showToast(solution.toUpperCase(), 2500);
           setStatusAnn(`The word was ${solution.toUpperCase()}.`);
         }
-        setStatsOpen(true);
-      }, delay);
+      }, juiceMs);
+      const statsMs = prefersReducedMotion() ? 500 : 2000;
+      setTimeout(() => setStatsOpen(true), juiceMs + statsMs);
     },
     [dateKey, persist, showToast, solution],
   );
@@ -357,7 +359,9 @@ export function WordleGame() {
         onOpenChange={setStatsOpen}
         stats={stats}
         status={status}
-        solution={status === "lost" ? solution : undefined}
+        solution={status !== "playing" ? solution : undefined}
+        guesses={guesses}
+        puzzleNumber={getPuzzleNumber(dateKey)}
       />
       <HowToPlayDialog open={helpOpen} onOpenChange={setHelpOpen} />
     </div>
