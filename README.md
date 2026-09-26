@@ -19,19 +19,32 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 | Route | What |
 | --- | --- |
-| `/` | Home — Wordle, Builder, Connections, Themes + Account |
+| `/` | Home — Wordle, Builder, Connections, Mastermind, Themes + Account |
 | `/account` | Sign in (Google / magic link) or account + sign out |
 | `/themes` | Built-in theme picker (persists) |
 | `/wordle` | Daily Wordle |
 | `/wordle/builder` | Create a custom Wordle + share link |
 | `/w/:code` | Play a custom Wordle from an encoded share code |
 | `/connections` | Playable Connections |
+| `/mastermind` | Mastermind — choose Easy / Medium / Hard, then play |
 
 ```bash
-pnpm test     # unit tests (Wordle + Connections + theme)
+pnpm test     # unit tests (Wordle + Connections + Mastermind + theme)
 pnpm build    # production → dist/
 pnpm preview  # serve production build
 ```
+
+## Mastermind
+
+Crack a secret color code. Flow: **choose difficulty first**, then guess.
+
+| Difficulty | Pegs | Colors | Guesses | Duplicates |
+| --- | --- | --- | --- | --- |
+| Easy | 4 | 4 | 12 | Off |
+| Medium | 4 | 6 | 10 | On |
+| Hard | 5 | 8 | 8 | On |
+
+Feedback keys: **exact** (right color + position) and **near** (right color, wrong spot). Peg colors use `--mm-peg-*` / `--mm-exact` / `--mm-near` theme CSS variables. Optional in-progress restore via `localStorage` (`tonni-mastermind-v1`).
 
 ## Connections
 
@@ -114,7 +127,7 @@ Wordle Builder stays on separate routes (`/wordle/builder`, `/w/:code`).
 
 ## Testing
 
-Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolve / persist / apply, and Connections grouping/validation/share. Full Playwright PR matrix follows ADR 0008 — not required to ship playable games.
+Vitest unit tests (`pnpm test`) cover Wordle evaluation, Mastermind feedback, theme registry / resolve / persist / apply, and Connections grouping/validation/share. Full Playwright PR matrix follows ADR 0008 — not required to ship playable games.
 
 ## Where things live
 
@@ -127,12 +140,15 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 | `src/pages/wordle-builder.tsx` | Custom Wordle builder |
 | `src/pages/wordle-custom-play.tsx` | Play encoded share codes |
 | `src/pages/connections.tsx` | Connections (`/connections`) |
+| `src/pages/mastermind.tsx` | Mastermind (`/mastermind`) |
 | `src/components/app-shell.tsx` | Anchored header + body scroll |
 | `src/components/auth-context.tsx` | Supabase session provider |
 | `src/lib/supabase.ts` | Supabase client (null if env missing) |
 | `supabase/migrations/` | Profiles (+ later packs) SQL |
 | `src/components/wordle/` | Wordle UI |
 | `src/components/connections/` | Connections UI |
+| `src/components/mastermind/` | Mastermind UI |
+| `src/lib/mastermind/` | Difficulty, evaluate, storage |
 | `src/lib/connections/` | Logic, NYT parse, packs loader, share |
 | `src/data/connections/` | Tonni-authored puzzle packs |
 | `api/connections-nyt/[date].ts` | Vercel proxy for NYT Connections |
