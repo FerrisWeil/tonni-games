@@ -1,21 +1,46 @@
 /**
- * Supabase is deferred until sign-in (ADR 0004). Stub keeps optional env wiring
- * without requiring `@supabase/supabase-js` until that ADR is revisited.
+ * Supabase client (ADR 0015 / 0023). Real `@supabase/supabase-js` when env is set;
+ * null client + isSupabaseConfigured=false when missing (gameplay still works).
  */
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-/** True when real Supabase credentials are present (client still unused). */
-export const isSupabaseConfigured = Boolean(
-  url &&
-    anonKey &&
-    !url.includes("your-project") &&
-    anonKey !== "your-anon-key",
-);
+function looksConfigured(u: string | undefined, k: string | undefined): boolean {
+  return Boolean(
+    u &&
+      k &&
+      !u.includes("your-project") &&
+      k !== "your-anon-key" &&
+      u.startsWith("http"),
+  );
+}
 
-export const supabase = null;
+/** True when real Supabase credentials are present. */
+export const isSupabaseConfigured = looksConfigured(url, anonKey);
 
-export function getSupabase(): null {
-  return supabase;
+let client: SupabaseClient | null = null;
+
+if (isSupabaseConfigured && url && anonKey) {
+  client = createClient(url, anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: "pkce",
+    },
+  });
+}
+
+export const supabase = client;
+
+export function getSupabase(): SupabaseClient | null {
+  return client;
+}
+
+/** Redirect target after OAuth / magic link. Always lands on Account. */
+export function authRedirectTo(path = "/account"): string {
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
 }
