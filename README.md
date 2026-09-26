@@ -19,9 +19,11 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 | Route | What |
 | --- | --- |
-| `/` | Home — Wordle + Connections + Themes |
+| `/` | Home — Wordle, Builder, Connections, Themes |
 | `/themes` | Built-in theme picker (persists) |
-| `/wordle` | Playable Wordle |
+| `/wordle` | Daily Wordle |
+| `/wordle/builder` | Create a custom Wordle + share link |
+| `/w/:code` | Play a custom Wordle from an encoded share code |
 | `/connections` | Playable Connections |
 
 ```bash
@@ -48,6 +50,10 @@ Default source is **Tonni custom packs** (`src/data/connections/` + registry in 
 NYT uses same-origin `/api/connections-nyt/{YYYY-MM-DD}` (Vite proxy in dev; Vercel serverless in prod). Soft fallback to Tonni if the fetch fails. Personal/family non‑monetized use only (ADR 0009 / 0013) — not affiliated with The New York Times.
 
 Add more custom packs by appending to `CONNECTION_PACKS` in `src/lib/connections/packs.ts`.
+
+## Wordle Builder
+
+Create a custom solution at `/wordle/builder` (3–10 letters, A–Z). The app encodes **version + length + obfuscated letters + checksum** as a base64url code and shares `/w/:code`. No database — anyone with the link can play. Length 5 guesses use the daily dictionary; other lengths accept any A–Z guess of the correct length. Guess budget: 6 (≤5 letters), 7 (6–7), or 8 (8–10).
 
 ## Wordle — personal NYT spike
 
