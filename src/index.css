@@ -1,0 +1,236 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+}
+
+:root {
+  --background: #e8efe6;
+  --ink: #1c2420;
+  --ink-muted: #5a6b61;
+  --panel: #f4f7f2;
+  --panel-border: #c5d2c4;
+  --accent-brand: #2f6b4f;
+  --tile-border: #a8b8aa;
+  --tile-border-filled: #1c2420;
+  --tile-correct: #3a8f5c;
+  --tile-present: #c9a227;
+  --tile-absent: #6b756e;
+  --key-bg: #d0dbce;
+  --bar-track: #d5e0d2;
+  /* Fluid tile size: fits ~5 tiles + gaps on 320px–desktop */
+  --tile-size: clamp(2.65rem, 13.5vmin, 3.85rem);
+  --tile-gap: clamp(0.25rem, 1.2vmin, 0.4rem);
+  --tile-font: clamp(1.15rem, 5.5vmin, 1.85rem);
+  --key-h: clamp(2.75rem, 12vmin, 3.5rem);
+}
+
+html {
+  /* Prevent iOS rubber-band sideways scroll */
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, #f7faf5 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 100%, #d4e3d6 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 80%, #dde8da 0%, transparent 45%);
+  background-attachment: fixed;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Shared board tile shell — used by Tile + RevealingTile */
+.wordle-tile {
+  position: relative;
+  display: flex;
+  width: var(--tile-size);
+  height: var(--tile-size);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--tile-font);
+  font-weight: 700;
+  text-transform: uppercase;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tile-face {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+@keyframes tile-flip-correct {
+  0% {
+    transform: rotateX(0);
+    background: transparent;
+    border-color: var(--tile-border-filled);
+    color: var(--ink);
+  }
+  49% {
+    transform: rotateX(90deg);
+    background: transparent;
+    border-color: var(--tile-border-filled);
+    color: var(--ink);
+  }
+  50% {
+    transform: rotateX(90deg);
+    background: var(--tile-correct);
+    border-color: transparent;
+    color: white;
+  }
+  100% {
+    transform: rotateX(0);
+    background: var(--tile-correct);
+    border-color: transparent;
+    color: white;
+  }
+}
+
+@keyframes tile-flip-present {
+  0% {
+    transform: rotateX(0);
+    background: transparent;
+    border-color: var(--tile-border-filled);
+    color: var(--ink);
+  }
+  49% {
+    transform: rotateX(90deg);
+    background: transparent;
+    border-color: var(--tile-border-filled);
+    color: var(--ink);
+  }
+  50% {
+    transform: rotateX(90deg);
+    background: var(--tile-present);
+    border-color: transparent;
+    color: white;
+  }
+  100% {
+    transform: rotateX(0);
+    background: var(--tile-present);
+    border-color: transparent;
+    color: white;
+  }
+}
+
+@keyframes tile-flip-absent {
+  0% {
+    transform: rotateX(0);
+    background: transparent;
+    border-color: var(--tile-border-filled);
+    color: var(--ink);
+  }
+  49% {
+    transform: rotateX(90deg);
+    background: transparent;
+    border-color: var(--tile-border-filled);
+    color: var(--ink);
+  }
+  50% {
+    transform: rotateX(90deg);
+    background: var(--tile-absent);
+    border-color: transparent;
+    color: white;
+  }
+  100% {
+    transform: rotateX(0);
+    background: var(--tile-absent);
+    border-color: transparent;
+    color: white;
+  }
+}
+
+.animate-tile-flip.reveal-correct {
+  animation: tile-flip-correct 500ms ease-in forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+.animate-tile-flip.reveal-present {
+  animation: tile-flip-present 500ms ease-in forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+.animate-tile-flip.reveal-absent {
+  animation: tile-flip-absent 500ms ease-in forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes tile-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-tile-pop {
+  animation: tile-pop 100ms ease-in-out;
+}
+
+@keyframes tile-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+.animate-tile-shake {
+  animation: tile-shake 500ms ease-in-out;
+}
+
+/* Short phones: tighten vertical rhythm so board + keyboard fit */
+@media (max-height: 700px) {
+  :root {
+    --tile-size: clamp(2.4rem, 11.5vmin, 3.25rem);
+    --tile-font: clamp(1.05rem, 4.8vmin, 1.5rem);
+    --key-h: clamp(2.5rem, 10.5vmin, 3rem);
+  }
+}
+
+@media (max-height: 600px) {
+  :root {
+    --tile-size: clamp(2.15rem, 10vmin, 2.85rem);
+    --tile-gap: 0.2rem;
+    --key-h: clamp(2.35rem, 9.5vmin, 2.75rem);
+  }
+}
+
+/* Touch keys: no 300ms delay / double-tap zoom side effects */
+.wordle-key {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}

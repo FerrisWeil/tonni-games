@@ -1,0 +1,3 @@
+# Minimal Supabase CLI config for Tonni Games.
+# Wordle gameplay uses localStorage; Postgres is wired for future shared features.
+project_id = "tonni-games"
