@@ -402,8 +402,8 @@ export function ConnectionsGame() {
 
       <p className="mt-2 text-center text-xs text-[var(--ink-muted)]">
         {puzzle.title}
-        {puzzle.dateKey ? ` · ${puzzle.dateKey}` : ""}
-        {sourceLabel === "nyt" ? " · unofficial NYT" : " · Tonni pack"}
+        {puzzle.dateKey ? ` \u00b7 ${puzzle.dateKey}` : ""}
+        {sourceLabel === "nyt" ? " \u00b7 unofficial NYT" : " \u00b7 Tonni pack"}
       </p>
 
       <div
@@ -588,7 +588,7 @@ function HowToPlayConnections({
         </ul>
         <p className="text-xs text-[var(--ink-muted)]">
           Tonni packs are original. NYT source is an unofficial personal-use
-          fetch with soft fallback — not affiliated with The New York Times.
+          fetch with soft fallback \u2014 not affiliated with The New York Times.
         </p>
       </div>
     </Modal>
@@ -630,7 +630,7 @@ function ResultDialog({
         <p>
           {won
             ? `Solved with ${mistakes} mistake${mistakes === 1 ? "" : "s"}.`
-            : "Out of mistakes — categories revealed."}
+            : "Out of mistakes \u2014 categories revealed."}
         </p>
         <pre
           className="mx-auto w-fit whitespace-pre text-left text-lg leading-tight"

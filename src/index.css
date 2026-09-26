@@ -24,7 +24,7 @@
   --bg-glow-br: #d4e3d6;
   --bg-glow-bl: #dde8da;
   --theme-color: #e8efe6;
-  /* Connections (ADR 0013) — registry also sets these at runtime */
+  /* Connections (ADR 0013) \u2014 registry also sets these at runtime */
   --conn-yellow: #f0d060;
   --conn-green: #a0c35a;
   --conn-blue: #b0c4ef;
@@ -37,7 +37,7 @@
   --conn-tile-selected: #5a6b61;
   --conn-tile-selected-ink: #f4f7f2;
   --conn-tile-ink: #1c2420;
-  /* Fluid tile size: fits ~5 tiles + gaps on 320px–desktop */
+  /* Fluid tile size: fits ~5 tiles + gaps on 320px\u2013desktop */
   --tile-size: clamp(2.65rem, 13.5vmin, 3.85rem);
   --tile-gap: clamp(0.25rem, 1.2vmin, 0.4rem);
   --tile-font: clamp(1.15rem, 5.5vmin, 1.85rem);
@@ -173,7 +173,7 @@ body {
   font-family: var(--font-display);
 }
 
-/* Shared board tile shell — used by Tile + RevealingTile */
+/* Shared board tile shell \u2014 used by Tile + RevealingTile */
 .wordle-tile {
   position: relative;
   display: flex;
@@ -463,7 +463,7 @@ body {
 }
 
 
-/* ——— Connections (independent module; theme tokens above) ——— */
+/* \u2014\u2014\u2014 Connections (independent module; theme tokens above) \u2014\u2014\u2014 */
 .conn-tile-idle {
   background: var(--conn-tile-bg);
   color: var(--conn-tile-ink);
