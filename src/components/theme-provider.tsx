@@ -8,13 +8,14 @@ import {
 import { ThemeContext } from "@/components/theme-context";
 import {
   applyResolvedTheme,
-  cycleThemePreference,
-  loadThemePreference,
-  resolveTheme,
-  saveThemePreference,
+  cycleThemeSelection,
+  loadThemeSelection,
+  resolveThemeSelection,
+  saveThemeSelection,
   type ResolvedTheme,
-  type ThemePreference,
+  type ThemeSelection,
 } from "@/lib/theme";
+import { listThemes } from "@/themes/registry";
 
 function readSystemDark(): boolean {
   return (
@@ -33,14 +34,15 @@ function syncDocumentTheme(resolved: ResolvedTheme): void {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() =>
-    loadThemePreference(),
+  const [selection, setSelectionState] = useState<ThemeSelection>(() =>
+    loadThemeSelection(),
   );
   const [systemDark, setSystemDark] = useState(readSystemDark);
+  const themes = useMemo(() => listThemes(), []);
 
   const resolved = useMemo(
-    () => resolveTheme(preference, systemDark),
-    [preference, systemDark],
+    () => resolveThemeSelection(selection, systemDark),
+    [selection, systemDark],
   );
 
   useEffect(() => {
@@ -59,22 +61,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const setPreference = useCallback((next: ThemePreference) => {
-    setPreferenceState(next);
-    saveThemePreference(next);
+  const setSelection = useCallback((next: ThemeSelection) => {
+    setSelectionState(next);
+    saveThemeSelection(next);
   }, []);
 
-  const cyclePreference = useCallback(() => {
-    setPreferenceState((prev) => {
-      const next = cycleThemePreference(prev);
-      saveThemePreference(next);
+  const cycleSelection = useCallback(() => {
+    setSelectionState((prev) => {
+      const next = cycleThemeSelection(prev);
+      saveThemeSelection(next);
       return next;
     });
   }, []);
 
   const value = useMemo(
-    () => ({ preference, resolved, cyclePreference, setPreference }),
-    [preference, resolved, cyclePreference, setPreference],
+    () => ({
+      selection,
+      resolved,
+      themes,
+      setSelection,
+      cycleSelection,
+      preference: selection,
+      cyclePreference: cycleSelection,
+      setPreference: setSelection,
+    }),
+    [selection, resolved, themes, setSelection, cycleSelection],
   );
 
   return (
