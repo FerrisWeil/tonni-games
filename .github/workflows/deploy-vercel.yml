@@ -1,10 +1,12 @@
 name: Deploy to Vercel
 
+# ADR 0025 / 0027: production promote only on push to master / workflow_dispatch.
+# PRs still run build + Verify Vercel build (≠ deploy). main is removed.
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
@@ -99,8 +101,13 @@ jobs:
             console.error("vercel.json rewrites must SPA-fallback non-api routes to /index.html");
             process.exit(1);
           }
+          if (cfg.git && cfg.git.deploymentEnabled === false) {
+            console.log("git.deploymentEnabled=false (no automatic Git deploys; Deploy Hook only)");
+          } else {
+            console.warn("WARN: git.deploymentEnabled is not false — Git pushes may create Vercel deploys");
+          }
           if (cfg.ignoreCommand && typeof cfg.ignoreCommand === "string") {
-            console.log("ignoreCommand present (non-main skips):", cfg.ignoreCommand);
+            console.log("ignoreCommand present (non-master skips):", cfg.ignoreCommand);
           } else {
             console.warn("WARN: no ignoreCommand — PR Git builds may burn Hobby deploy quota");
           }
@@ -145,18 +152,20 @@ jobs:
           Full `vercel pull` / `vercel build` is not run here: the repo VERCEL_TOKEN
           authenticates but returns 404 / cannot read project settings for tonni-games.
           Production promote uses the Deploy Hook only (see deploy job) — never CLI.
-          Preview Git deploys are disabled / ignored on non-main to protect Hobby quota.
+          Automatic Git deploys are off; previews disabled. On-demand work uses tonni-games-dev.
           To enable CLI verification later, rotate VERCEL_TOKEN for team
           ferrisweils-projects / project tonni-games (Full Account or the project).
           EOF
 
-  # Production promote only — not on PRs.
+  # Production promote only — never on pull_request (ADR 0025).
   # Do NOT use vercel CLI here: repo VERCEL_TOKEN authenticates but returns
   # "User not found" / cannot read project settings (404). Hook-only path.
   deploy:
     name: Deploy production (hook)
     needs: [build, vercel-build]
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Vercel production deploy hook
@@ -164,24 +173,25 @@ jobs:
           DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
         run: |
           set -euo pipefail
-          # Prefer secret override; fallback is the project Deploy Hook for main (PR #8).
-          HOOK="${DEPLOY_HOOK_URL:-https://api.vercel.com/v1/integrations/deploy/prj_xpylCQ0S9SSuj8DYmOsctzSp3emH/080bdhUrpY}"
-          echo "Triggering Vercel Deploy Hook for main (GHA verify ≠ this promote)…"
+          # Prefer secret VERCEL_DEPLOY_HOOK_URL. Fallback is the master-branch Deploy Hook.
+          # Taylor: set the secret to this URL (or recreate under Vercel → Settings → Git → Deploy Hooks).
+          HOOK="${DEPLOY_HOOK_URL:-https://api.vercel.com/v1/integrations/deploy/prj_xpylCQ0S9SSuj8DYmOsctzSp3emH/UQtDlfYFbR}"
+          echo "Triggering Vercel Deploy Hook for production (GHA verify ≠ this promote)…"
           echo "CLI vercel deploy is intentionally not used (broken VERCEL_TOKEN scope)."
           http_code=$(curl -sS -o /tmp/hook-resp.json -w "%{http_code}" -X POST "$HOOK")
           resp=$(cat /tmp/hook-resp.json)
           echo "HTTP $http_code"
           echo "$resp"
           if echo "$resp" | grep -qiE 'rate.?limit|upgradeToPro|api-deployments-free'; then
-            echo "::error::Vercel Hobby deploy rate limit hit. Wait ~24h or upgrade. Preview deploys are disabled; only main/hook should consume quota."
+            echo "::error::Vercel Hobby deploy rate limit hit. Wait ~24h or upgrade. Prod is thrifty (ADR 0025); use tonni-games-dev for on-demand."
             exit 1
           fi
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "::error::Deploy Hook HTTP $http_code. Check VERCEL_DEPLOY_HOOK_URL secret or recreate the hook in Vercel → Project → Settings → Git → Deploy Hooks."
+            echo "::error::Deploy Hook HTTP $http_code. Check VERCEL_DEPLOY_HOOK_URL secret or recreate the hook for branch master in Vercel → Project → Settings → Git → Deploy Hooks."
             exit 1
           fi
           echo "$resp" | grep -q '"job"' || {
-            echo "::error::Deploy Hook response missing job payload. Rotate VERCEL_DEPLOY_HOOK_URL or recreate the hook."
+            echo "::error::Deploy Hook response missing job payload. Rotate VERCEL_DEPLOY_HOOK_URL or recreate the hook for master."
             exit 1
           }
           echo "$resp" | grep -q '"state"' || {
