@@ -28,4 +28,28 @@ describe("evaluateGuess", () => {
     const map = buildKeyboardStates(["aaaaa"], "abcde");
     expect(map.a).toBe("correct");
   });
+
+  it("evaluates N-letter solutions", () => {
+    const short = evaluateGuess("cat", "car");
+    expect(short.map((r) => r.state)).toEqual([
+      "correct",
+      "correct",
+      "absent",
+    ]);
+
+    const long = evaluateGuess("abcdefgh", "abcxefgh");
+    expect(long).toHaveLength(8);
+    expect(long[0].state).toBe("correct");
+    expect(long[3].state).toBe("absent");
+    expect(long[7].state).toBe("correct");
+  });
+
+  it("handles double letters on N-length boards", () => {
+    const result = evaluateGuess("balloon", "balloon");
+    expect(result.every((r) => r.state === "correct")).toBe(true);
+
+    const partial = evaluateGuess("llxxxxx", "balloon");
+    // First L can be present (positions 2–3 in balloon); second L also present.
+    expect(partial.filter((r) => r.state === "present")).toHaveLength(2);
+  });
 });
