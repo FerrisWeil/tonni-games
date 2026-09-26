@@ -2,7 +2,7 @@
 
 Free NYT-style puzzle games for Tonni. No paywall, no play limits.
 
-Games are built independently; a multi-game shell comes later. Backend/sign-in is deferred — progress uses **localStorage**.
+Games are built independently; a multi-game shell comes later. **Sign-in** uses Supabase Auth (Google + email magic link) at `/account`. Play progress still uses **localStorage** until packs land; without Supabase env vars, Account shows “Sign-in unavailable” and games keep working.
 
 ## Stack
 
@@ -19,7 +19,8 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 | Route | What |
 | --- | --- |
-| `/` | Home — Wordle + Connections + Themes |
+| `/` | Home — Wordle + Connections + Themes + Account |
+| `/account` | Sign in (Google / magic link) or account + sign out |
 | `/themes` | Built-in theme picker (persists) |
 | `/wordle` | Playable Wordle |
 | `/connections` | Playable Connections |
@@ -65,7 +66,7 @@ Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `
 Open **Themes** from home (`/themes`) or the palette icon in game headers. Built-ins:
 
 | Id | Name | Notes |
-| --- | --- |
+| --- | --- | --- |
 | `system` | System | Classic by day, Midnight by night (`prefers-color-scheme`) |
 | `classic` | Classic | Tonni default light |
 | `midnight` | Midnight | Tonni dark |
@@ -80,6 +81,33 @@ Theme rows use **static sizes** (no layout shift when selecting). Shared **`AppS
 
 Add a `ThemeDefinition` in `src/themes/registry.ts` (or call `registerTheme()` at runtime). Board/keyboard/Connections already consume tokens; no game rewrites needed.
 
+## Sign-in (Supabase Auth)
+
+Account UI: **`/account`** (home header → Sign in / Account). Providers: **Google** + **email magic link**. Session persists in the browser; Sign out is on Account.
+
+```bash
+cp .env.example .env.local
+# set VITE_SUPABASE_ANON_KEY from Supabase → Project Settings → API
+pnpm dev
+```
+
+Without env keys, Account shows **Sign-in unavailable** and games still work.
+
+### Taylor setup (live OAuth)
+
+1. **Vercel env** — set `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (Production + Preview), redeploy.
+2. **Supabase → Authentication → URL Configuration** — Site URL `https://tonni-games.vercel.app`; Redirect URLs include:
+   - `http://127.0.0.1:43127/account`
+   - `http://localhost:43127/account`
+   - `https://tonni-games.vercel.app/account`
+   - preview hosts as needed (`https://*.vercel.app/account`)
+3. **Google Cloud** — OAuth Web client; JS origins for local + production; Authorized redirect URI = `https://vycergkxkrpsbxoglrws.supabase.co/auth/v1/callback`.
+4. **Supabase → Authentication → Providers → Google** — enable; paste Client ID + Secret.
+5. **Email** — Providers → Email enabled for magic links (custom SMTP optional).
+6. **Profiles** — migration `supabase/migrations/20260926170000_profiles.sql` (already applied on project if agents ran it; re-run safe).
+
+Pack upload / Wordle Builder stay on **separate routes** and will reuse this session when they land.
+
 ## Testing
 
 Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolve / persist / apply, and Connections grouping/validation/share. Full Playwright PR matrix follows ADR 0008 — not required to ship playable games.
@@ -89,9 +117,14 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 | Path | Role |
 | --- | --- |
 | `src/pages/home.tsx` | Home (`/`) |
+| `src/pages/account.tsx` | Sign-in / account (`/account`) |
 | `src/pages/themes.tsx` | Theme picker (`/themes`) |
 | `src/pages/wordle.tsx` | Wordle (`/wordle`) |
 | `src/pages/connections.tsx` | Connections (`/connections`) |
+| `src/components/app-shell.tsx` | Anchored header + body scroll |
+| `src/components/auth-context.tsx` | Supabase session provider |
+| `src/lib/supabase.ts` | Supabase client (null if env missing) |
+| `supabase/migrations/` | Profiles (+ later packs) SQL |
 | `src/components/wordle/` | Wordle UI |
 | `src/components/connections/` | Connections UI |
 | `src/lib/connections/` | Logic, NYT parse, packs loader, share |
@@ -113,7 +146,7 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 Workflow: `.github/workflows/deploy-vercel.yml`.
 
 | Job | When | What |
-| --- | --- |
+| --- | --- | --- |
 | `build` | PRs + `main` | `pnpm test` + `pnpm build` |
 | **Verify Vercel build** (`vercel-build`) | PRs + `main` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
 | **Deploy production (hook)** | `push` to `main` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). Skipped on PRs. |
@@ -121,7 +154,7 @@ Workflow: `.github/workflows/deploy-vercel.yml`.
 ### Secrets
 
 | Secret | Required? | Notes |
-| --- | --- |
+| --- | --- | --- |
 | `VERCEL_DEPLOY_HOOK_URL` | Optional | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated. |
 | `VERCEL_TOKEN` | **Not used by current GHA** | Past tokens authenticate but **404 / cannot read project settings** for `tonni-games` (`vercel pull` → “Could not retrieve Project Settings”). Do **not** rely on CLI deploy until rotated. |
 | `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Optional (CLI only) | Team `team_xNSXW3QfytHiY0cKnRgj222W` (`ferrisweils-projects`), project `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`. |
