@@ -1,4 +1,4 @@
-export type LetterState = "correct" | "present" | "absent" | "empty" | "tbd";
+export type LetterState = "empty" | "tbd" | "absent" | "present" | "correct";
 
 export type GameStatus = "playing" | "won" | "lost";
 
@@ -19,7 +19,6 @@ export interface Stats {
   wins: number;
   currentStreak: number;
   maxStreak: number;
-  /** Index 0 = 1 guess, …, index 5 = 6 guesses */
   guessDistribution: [number, number, number, number, number, number];
   lastPlayedDate: string | null;
   lastWonDate: string | null;
