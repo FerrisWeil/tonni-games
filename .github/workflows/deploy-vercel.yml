@@ -38,63 +38,25 @@ jobs:
       - name: Build
         run: pnpm build
 
+  # VERCEL_TOKEN repo secret authenticates but cannot read this project
+  # (vercel pull → "Could not retrieve Project Settings"). Use a Deploy Hook
+  # instead so GHA can trigger production deploys without that token.
   deploy:
     needs: build
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
-    env:
-      # Public project identifiers (not secrets). Hardcoded so deploy does not
-      # depend on mis-set VERCEL_ORG_ID / VERCEL_PROJECT_ID repository secrets.
-      VERCEL_ORG_ID: team_xNSXW3QfytHiY0cKnRgj222W
-      VERCEL_PROJECT_ID: prj_xpylCQ0S9SSuj8DYmOsctzSp3emH
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Vercel CLI
-        run: pnpm add -g vercel@latest
-
-      - name: Check token
-        id: secrets
+      - name: Trigger Vercel production deploy hook
+        env:
+          # Prefer secret if set; fallback to project deploy hook for main.
+          DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
         run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping deploy: set VERCEL_TOKEN repository secret."
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Link Vercel project
-        if: steps.secrets.outputs.configured == 'true'
-        run: |
-          mkdir -p .vercel
-          cat > .vercel/project.json <<EOF
-          {"orgId":"$VERCEL_ORG_ID","projectId":"$VERCEL_PROJECT_ID"}
-          EOF
-
-      - name: Pull Vercel environment
-        if: steps.secrets.outputs.configured == 'true'
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Build with Vercel
-        if: steps.secrets.outputs.configured == 'true'
-        run: vercel build --prod --token="$VERCEL_TOKEN"
-
-      - name: Deploy production
-        if: steps.secrets.outputs.configured == 'true'
-        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+          set -euo pipefail
+          HOOK="${DEPLOY_HOOK_URL:-https://api.vercel.com/v1/integrations/deploy/prj_xpylCQ0S9SSuj8DYmOsctzSp3emH/080bdhUrpY}"
+          echo "Triggering Vercel deploy hook for main…"
+          resp=$(curl -sS -X POST "$HOOK")
+          echo "$resp"
+          echo "$resp" | grep -q '"state"' || {
+            echo "Deploy hook did not return a job payload"
+            exit 1
+          }
