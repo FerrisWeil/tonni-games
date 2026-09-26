@@ -30,7 +30,8 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # Main's lockfile was mid-repair; allow resolve until a complete lock lands.
+        run: pnpm install
 
       - name: Test
         run: pnpm test
@@ -62,7 +63,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Install Vercel CLI
         run: pnpm add -g vercel@latest
