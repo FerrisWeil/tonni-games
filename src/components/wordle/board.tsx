@@ -1,4 +1,5 @@
 import { evaluateGuess } from "@/lib/evaluate";
+import { tileAriaLabel } from "@/lib/letter-state";
 import { MAX_GUESSES, WORD_LENGTH, type LetterState } from "@/lib/types";
 import { Tile } from "./tile";
 
@@ -18,13 +19,25 @@ export function Board({
   shakeRow,
 }: BoardProps) {
   return (
-    <div className="mx-auto w-full max-w-[min(100%,22rem)] px-1" aria-label="Guess board">
-      <div className="flex flex-col" style={{ gap: "var(--tile-gap)" }}>
+    <div
+      className="mx-auto w-full max-w-[min(100%,22rem)] px-1"
+      role="group"
+      aria-label={`Guess board, ${guesses.length} of ${MAX_GUESSES} guesses used`}
+    >
+      <div
+        className="flex flex-col"
+        style={{ gap: "var(--tile-gap)" }}
+        role="grid"
+        aria-rowcount={MAX_GUESSES}
+        aria-colcount={WORD_LENGTH}
+      >
         {Array.from({ length: MAX_GUESSES }, (_, row) => (
           <div
             key={row}
             className="flex justify-center"
             style={{ gap: "var(--tile-gap)" }}
+            role="row"
+            aria-rowindex={row + 1}
           >
             {renderRow({
               row,
@@ -105,13 +118,24 @@ function RevealingTile({
   finalState: LetterState;
   index: number;
 }) {
+  const pattern =
+    finalState === "correct"
+      ? "tile-pattern-correct"
+      : finalState === "present"
+        ? "tile-pattern-present"
+        : "tile-pattern-absent";
+
   return (
     <div
       className="wordle-tile"
-      style={{ ["--reveal-delay" as string]: `${index * 300}ms` }}
+      style={{ ["--reveal-delay" as string]: `${index * 220}ms` }}
+      role="img"
+      aria-label={tileAriaLabel(letter, finalState)}
+      data-state={finalState}
     >
       <div
-        className={`tile-face animate-tile-flip absolute inset-0 flex items-center justify-center border-2 border-[var(--tile-border-filled)] bg-transparent text-[var(--ink)] reveal-${finalState}`}
+        className={`tile-face animate-tile-flip absolute inset-0 flex items-center justify-center border-2 border-[var(--tile-border-filled)] bg-transparent text-[var(--ink)] reveal-${finalState} ${pattern}`}
+        aria-hidden="true"
       >
         {letter}
       </div>
