@@ -1,9 +1,15 @@
-import { WordleGame } from "@/components/wordle/game";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HomePage } from "@/pages/home";
+import { WordlePage } from "@/pages/wordle";
 
 export default function App() {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col">
-      <WordleGame />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/wordle" element={<WordlePage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
