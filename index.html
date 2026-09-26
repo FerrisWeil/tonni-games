@@ -22,6 +22,27 @@
       rel="stylesheet"
     />
     <title>Tonni Games — Wordle</title>
+    <script>
+      (function () {
+        try {
+          var key = "tonni-theme-v1";
+          var stored = localStorage.getItem(key);
+          var pref =
+            stored === "light" || stored === "dark" || stored === "system"
+              ? stored
+              : "system";
+          var dark =
+            pref === "dark" ||
+            (pref === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var theme = dark ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", theme);
+          document.documentElement.style.colorScheme = theme;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", dark ? "#121a16" : "#e8efe6");
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
