@@ -24,6 +24,19 @@
   --bg-glow-br: #d4e3d6;
   --bg-glow-bl: #dde8da;
   --theme-color: #e8efe6;
+  /* Connections (ADR 0013) — registry also sets these at runtime */
+  --conn-yellow: #f0d060;
+  --conn-green: #a0c35a;
+  --conn-blue: #b0c4ef;
+  --conn-purple: #ba81c5;
+  --conn-yellow-ink: #1c2420;
+  --conn-green-ink: #1c2420;
+  --conn-blue-ink: #1c2420;
+  --conn-purple-ink: #1c2420;
+  --conn-tile-bg: #efefe6;
+  --conn-tile-selected: #5a6b61;
+  --conn-tile-selected-ink: #f4f7f2;
+  --conn-tile-ink: #1c2420;
   /* Fluid tile size: fits ~5 tiles + gaps on 320px–desktop */
   --tile-size: clamp(2.65rem, 13.5vmin, 3.85rem);
   --tile-gap: clamp(0.25rem, 1.2vmin, 0.4rem);
@@ -50,6 +63,18 @@
   --bg-glow-br: #152018;
   --bg-glow-bl: #18241c;
   --theme-color: #121a16;
+  --conn-yellow: #c9a227;
+  --conn-green: #3a8f5c;
+  --conn-blue: #5a7ec4;
+  --conn-purple: #9b5fad;
+  --conn-yellow-ink: #121a16;
+  --conn-green-ink: #e8efe6;
+  --conn-blue-ink: #e8efe6;
+  --conn-purple-ink: #e8efe6;
+  --conn-tile-bg: #2a3530;
+  --conn-tile-selected: #9aaba0;
+  --conn-tile-selected-ink: #121a16;
+  --conn-tile-ink: #e8efe6;
 }
 
 [data-theme="high-contrast"] {
@@ -70,6 +95,18 @@
   --bg-glow-br: #0a0a0a;
   --bg-glow-bl: #0a0a0a;
   --theme-color: #0a0a0a;
+  --conn-yellow: #ffd600;
+  --conn-green: #00c853;
+  --conn-blue: #40c4ff;
+  --conn-purple: #e040fb;
+  --conn-yellow-ink: #0a0a0a;
+  --conn-green-ink: #0a0a0a;
+  --conn-blue-ink: #0a0a0a;
+  --conn-purple-ink: #0a0a0a;
+  --conn-tile-bg: #2a2a2a;
+  --conn-tile-selected: #ffffff;
+  --conn-tile-selected-ink: #0a0a0a;
+  --conn-tile-ink: #ffffff;
 }
 
 [data-theme="meadow"] {
@@ -90,6 +127,18 @@
   --bg-glow-br: #e8dfc8;
   --bg-glow-bl: #ebe4d4;
   --theme-color: #f3eee3;
+  --conn-yellow: #e6c35c;
+  --conn-green: #8faf4a;
+  --conn-blue: #9eb6d9;
+  --conn-purple: #b888b0;
+  --conn-yellow-ink: #2a2418;
+  --conn-green-ink: #2a2418;
+  --conn-blue-ink: #2a2418;
+  --conn-purple-ink: #2a2418;
+  --conn-tile-bg: #e8e0d0;
+  --conn-tile-selected: #6e6454;
+  --conn-tile-selected-ink: #faf6ee;
+  --conn-tile-ink: #2a2418;
 }
 
 html {
@@ -410,5 +459,96 @@ body {
   :root {
     --tile-size: clamp(2.35rem, 14vw, 3rem);
     --key-h: clamp(2.5rem, 11vmin, 3rem);
+  }
+}
+
+
+/* ——— Connections (independent module; theme tokens above) ——— */
+.conn-tile-idle {
+  background: var(--conn-tile-bg);
+  color: var(--conn-tile-ink);
+}
+.conn-tile-selected {
+  background: var(--conn-tile-selected);
+  color: var(--conn-tile-selected-ink);
+  box-shadow: inset 0 0 0 2px var(--accent-brand);
+}
+.conn-tile:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.conn-found-yellow {
+  background: var(--conn-yellow);
+  color: var(--conn-yellow-ink);
+}
+.conn-found-green {
+  background: var(--conn-green);
+  color: var(--conn-green-ink);
+}
+.conn-found-blue {
+  background: var(--conn-blue);
+  color: var(--conn-blue-ink);
+}
+.conn-found-purple {
+  background: var(--conn-purple);
+  color: var(--conn-purple-ink);
+}
+.conn-btn {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  padding: 0.5rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  touch-action: manipulation;
+}
+.conn-btn:disabled {
+  opacity: 0.45;
+}
+.conn-btn:not(:disabled):hover {
+  border-color: var(--ink-muted);
+}
+.conn-btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+.conn-btn-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--background);
+}
+.conn-btn-primary:not(:disabled):hover {
+  filter: brightness(1.08);
+}
+@keyframes conn-shake-kf {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+.conn-shake {
+  animation: conn-shake-kf 0.4s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .conn-shake {
+    animation: none;
+  }
+  .conn-tile:active:not(:disabled) {
+    transform: none;
   }
 }
