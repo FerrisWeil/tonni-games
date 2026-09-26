@@ -28,6 +28,10 @@ pnpm build    # production → dist/
 pnpm preview  # serve production build
 ```
 
+## Testing
+
+Vitest unit tests ship with the app (`pnpm test`). Full Playwright PR matrix follows ADR 0008 / the testing strategy plan — **not required to ship** playable Wordle (no nightly for now).
+
 ## Where the game lives
 
 | Path | Role |
