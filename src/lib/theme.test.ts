@@ -1,39 +1,89 @@
 import { describe, it, expect } from "vitest";
 import {
   applyResolvedTheme,
-  cycleThemePreference,
-  isThemePreference,
-  loadThemePreference,
-  resolveTheme,
-  saveThemePreference,
+  cycleThemeSelection,
+  isThemeSelection,
+  loadThemeSelection,
+  resolveThemeSelection,
+  saveThemeSelection,
   THEME_STORAGE_KEY,
-  themeColorFor,
-  themePreferenceLabel,
+  LEGACY_THEME_STORAGE_KEY,
+  themeSelectionLabel,
 } from "./theme";
+import {
+  BUILTIN_THEMES,
+  clearRegisteredThemes,
+  getThemeById,
+  listThemes,
+  registerTheme,
+  TOKEN_CSS_VARS,
+} from "@/themes/registry";
 
-describe("theme", () => {
-  it("validates preference values", () => {
-    expect(isThemePreference("system")).toBe(true);
-    expect(isThemePreference("light")).toBe(true);
-    expect(isThemePreference("dark")).toBe(true);
-    expect(isThemePreference("auto")).toBe(false);
-    expect(isThemePreference(null)).toBe(false);
+describe("theme registry", () => {
+  it("ships Classic, Midnight, High Contrast, and Meadow", () => {
+    const ids = BUILTIN_THEMES.map((t) => t.id);
+    expect(ids).toEqual(["classic", "midnight", "high-contrast", "meadow"]);
   });
 
-  it("resolves system preference from OS dark flag", () => {
-    expect(resolveTheme("system", true)).toBe("dark");
-    expect(resolveTheme("system", false)).toBe("light");
-    expect(resolveTheme("light", true)).toBe("light");
-    expect(resolveTheme("dark", false)).toBe("dark");
+  it("looks up themes by id", () => {
+    expect(getThemeById("classic")?.name).toBe("Classic");
+    expect(getThemeById("nope")).toBeUndefined();
   });
 
-  it("cycles system → light → dark → system", () => {
-    expect(cycleThemePreference("system")).toBe("light");
-    expect(cycleThemePreference("light")).toBe("dark");
-    expect(cycleThemePreference("dark")).toBe("system");
+  it("allows registering a custom theme without colliding", () => {
+    clearRegisteredThemes();
+    const before = listThemes().length;
+    registerTheme({
+      id: "test-custom",
+      name: "Test Custom",
+      description: "Unit-test only",
+      colorScheme: "light",
+      tokens: getThemeById("classic")!.tokens,
+      preview: { background: "#fff", accent: "#000", tile: "#0f0" },
+    });
+    expect(listThemes()).toHaveLength(before + 1);
+    expect(getThemeById("test-custom")?.name).toBe("Test Custom");
+    expect(() =>
+      registerTheme({
+        id: "test-custom",
+        name: "Dup",
+        description: "",
+        colorScheme: "light",
+        tokens: getThemeById("classic")!.tokens,
+        preview: { background: "#fff", accent: "#000", tile: "#0f0" },
+      }),
+    ).toThrow(/already registered/);
+    clearRegisteredThemes();
+  });
+});
+
+describe("theme selection", () => {
+  it("validates selection values", () => {
+    expect(isThemeSelection("system")).toBe(true);
+    expect(isThemeSelection("classic")).toBe(true);
+    expect(isThemeSelection("midnight")).toBe(true);
+    expect(isThemeSelection("light")).toBe(false);
+    expect(isThemeSelection(null)).toBe(false);
   });
 
-  it("loads and saves preference via storage", () => {
+  it("resolves system to Classic or Midnight from OS", () => {
+    expect(resolveThemeSelection("system", false).id).toBe("classic");
+    expect(resolveThemeSelection("system", true).id).toBe("midnight");
+    expect(resolveThemeSelection("high-contrast", true).id).toBe(
+      "high-contrast",
+    );
+    expect(resolveThemeSelection("meadow", false).colorScheme).toBe("light");
+  });
+
+  it("cycles system → classic → midnight → high-contrast → meadow → system", () => {
+    expect(cycleThemeSelection("system")).toBe("classic");
+    expect(cycleThemeSelection("classic")).toBe("midnight");
+    expect(cycleThemeSelection("midnight")).toBe("high-contrast");
+    expect(cycleThemeSelection("high-contrast")).toBe("meadow");
+    expect(cycleThemeSelection("meadow")).toBe("system");
+  });
+
+  it("loads v2 and migrates legacy v1 light/dark/system", () => {
     const store = new Map<string, string>();
     const storage = {
       getItem: (k: string) => store.get(k) ?? null,
@@ -42,28 +92,42 @@ describe("theme", () => {
       },
     };
 
-    expect(loadThemePreference(storage)).toBe("system");
-    saveThemePreference("dark", storage);
-    expect(store.get(THEME_STORAGE_KEY)).toBe("dark");
-    expect(loadThemePreference(storage)).toBe("dark");
+    expect(loadThemeSelection(storage)).toBe("system");
 
-    store.set(THEME_STORAGE_KEY, "nope");
-    expect(loadThemePreference(storage)).toBe("system");
+    saveThemeSelection("meadow", storage);
+    expect(store.get(THEME_STORAGE_KEY)).toBe("meadow");
+    expect(loadThemeSelection(storage)).toBe("meadow");
+
+    store.clear();
+    store.set(LEGACY_THEME_STORAGE_KEY, "dark");
+    expect(loadThemeSelection(storage)).toBe("midnight");
+    store.set(LEGACY_THEME_STORAGE_KEY, "light");
+    expect(loadThemeSelection(storage)).toBe("classic");
+    store.set(LEGACY_THEME_STORAGE_KEY, "system");
+    expect(loadThemeSelection(storage)).toBe("system");
   });
 
-  it("labels preferences for the toggle", () => {
-    expect(themePreferenceLabel("system")).toBe("Theme: system");
-    expect(themePreferenceLabel("light")).toBe("Theme: light");
-    expect(themePreferenceLabel("dark")).toBe("Theme: dark");
+  it("labels selections", () => {
+    const midnight = resolveThemeSelection("midnight", false);
+    expect(themeSelectionLabel("midnight")).toBe("Theme: Midnight");
+    expect(themeSelectionLabel("system", midnight)).toBe(
+      "Theme: system (Midnight)",
+    );
   });
 
-  it("applies data-theme on a root element", () => {
+  it("applies data-theme, color-scheme, and CSS token vars", () => {
     const attrs: Record<string, string> = {};
+    const props: Record<string, string> = {};
     const root = {
       setAttribute: (name: string, value: string) => {
         attrs[name] = value;
       },
-      style: { colorScheme: "" },
+      style: {
+        colorScheme: "",
+        setProperty: (name: string, value: string) => {
+          props[name] = value;
+        },
+      },
     };
     const metaAttrs: Record<string, string> = {};
     const meta = {
@@ -72,14 +136,18 @@ describe("theme", () => {
       },
     };
 
-    applyResolvedTheme("dark", root, meta);
-    expect(attrs["data-theme"]).toBe("dark");
-    expect(root.style.colorScheme).toBe("dark");
-    expect(metaAttrs.content).toBe(themeColorFor("dark"));
+    const resolved = resolveThemeSelection("midnight", false);
+    applyResolvedTheme(resolved, root, meta);
 
-    applyResolvedTheme("light", root, meta);
-    expect(attrs["data-theme"]).toBe("light");
-    expect(root.style.colorScheme).toBe("light");
-    expect(metaAttrs.content).toBe(themeColorFor("light"));
+    expect(attrs["data-theme"]).toBe("midnight");
+    expect(attrs["data-color-scheme"]).toBe("dark");
+    expect(root.style.colorScheme).toBe("dark");
+    expect(props[TOKEN_CSS_VARS.background]).toBe(
+      resolved.definition.tokens.background,
+    );
+    expect(props[TOKEN_CSS_VARS.accentBrand]).toBe(
+      resolved.definition.tokens.accentBrand,
+    );
+    expect(metaAttrs.content).toBe(resolved.definition.tokens.themeColor);
   });
 });
