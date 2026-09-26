@@ -398,5 +398,5 @@ export const SOLUTIONS_3 = [
   "riper",
   "risen",
   "riser",
-  "risky"
+  "risky",
 ] as const;
