@@ -43,9 +43,13 @@ VITE_WORDLE_SOURCE=nyt pnpm dev
 
 Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `/api/wordle-nyt/{YYYY-MM-DD}` (Vite proxy in dev; Vercel serverless in prod). If the fetch fails, the game falls back to the local list and shows a toast.
 
+## Theme
+
+Dark mode follows **system** `prefers-color-scheme` by default. Use the sun / moon / monitor button (home + Wordle header) to cycle **system → light → dark**; the choice is stored in `localStorage` under `tonni-theme-v1`.
+
 ## Testing
 
-Vitest unit tests ship with the app (`pnpm test`). Full Playwright PR matrix follows ADR 0008 / the testing strategy plan — **not required to ship** playable Wordle (no nightly for now).
+Vitest unit tests ship with the app (`pnpm test`), including theme resolve / `data-theme` apply. Full Playwright PR matrix follows ADR 0008 / the testing strategy plan — **not required to ship** playable Wordle (no nightly for now).
 
 ## Where the game lives
 
@@ -54,6 +58,8 @@ Vitest unit tests ship with the app (`pnpm test`). Full Playwright PR matrix fol
 | `src/pages/home.tsx` | Minimal home (`/`) |
 | `src/pages/wordle.tsx` | Wordle route (`/wordle`) |
 | `src/components/wordle/` | Board, keyboard, stats, how-to-play UI |
+| `src/components/theme-*` | Dark mode provider + toggle |
+| `src/lib/theme.ts` | Theme preference resolve / persist / apply |
 | `src/lib/daily.ts` | Deterministic day → solution (default) |
 | `src/lib/nyt-wordle.ts` | Opt-in NYT JSON parse + fetch (spike) |
 | `api/wordle-nyt/[date].ts` | Vercel proxy for NYT `svc/wordle/v2` |
