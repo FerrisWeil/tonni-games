@@ -1,63 +1,39 @@
-# Tonni Games
+# Tonni Games — Wordle
 
-A free, Tonni-dedicated collection of NYT-style puzzle games — no play limits, no paywall. Deployed on Vercel with Supabase Postgres.
+Free daily Wordle for Tonni. Classic rules, no paywall, no play limits.
 
-## Wordle (first game)
+Games are built independently; a multi-game shell comes later. Backend/sign-in is deferred — board and stats use **localStorage**.
 
-Daily 5-letter Wordle with classic rules: six guesses, green / yellow / gray feedback, on-screen + physical keyboard, flip animations, and localStorage stats. Plays without Supabase; the client is ready when env vars are set.
+## Stack
 
-### Stack
+Vite + React + TypeScript · Tailwind · pnpm
 
-- Vite + React + TypeScript
-- Tailwind CSS
-- pnpm
-- Supabase Postgres (`@supabase/supabase-js`)
-- GitHub Actions → Vercel
-
-### Run locally
+## Run
 
 ```bash
 pnpm install
-cp .env.example .env   # optional — fill in Supabase keys when ready
 pnpm dev
 ```
 
 Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ```bash
-pnpm test
-pnpm build
-pnpm preview
+pnpm test     # evaluation unit tests
+pnpm build    # production → dist/
+pnpm preview  # serve production build
 ```
 
-### Environment variables
+## Where the game lives
 
-| Variable | Where | Required |
-| --- | --- | --- |
-| `VITE_SUPABASE_URL` | Vercel + local `.env` | Optional (Wordle works offline via localStorage) |
-| `VITE_SUPABASE_ANON_KEY` | Vercel + local `.env` | Optional |
-
-### Deploy (Vercel + GitHub Actions)
-
-Workflow: [`.github/workflows/deploy-vercel.yml`](.github/workflows/deploy-vercel.yml)
-
-**GitHub Actions secrets** (Settings → Secrets and variables → Actions):
-
-| Secret | Purpose |
+| Path | Role |
 | --- | --- |
-| `VERCEL_TOKEN` | Deploy token from [vercel.com/account/tokens](https://vercel.com/account/tokens) |
-| `VERCEL_ORG_ID` | Team/org id from `.vercel/project.json` or dashboard |
-| `VERCEL_PROJECT_ID` | Project id after `pnpm dlx vercel link` |
+| `src/components/wordle/` | Board, keyboard, stats, how-to-play UI |
+| `src/lib/daily.ts` | Deterministic day → solution |
+| `src/lib/evaluate.ts` | Official-style tile colors (incl. doubles) |
+| `src/lib/storage.ts` | localStorage board + stats |
+| `src/data/` | Solutions + allowed guesses |
+| `src/App.tsx` | Mounts Wordle (single-game surface) |
 
-**Vercel project env vars** (Project → Settings → Environment Variables):
+## Deploy
 
-| Variable | Notes |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Supabase Project URL |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anon / publishable key |
-
-Framework preset: Vite · Build: `pnpm build` · Output: `dist` · Install: `pnpm install`
-
-### Word lists
-
-Community-shared five-letter English word lists (not NYT proprietary assets). Branding is Tonni Games only.
+See `.github/workflows/deploy-vercel.yml`. Optional GitHub secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
