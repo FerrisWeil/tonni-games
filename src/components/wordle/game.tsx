@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChartNoAxesColumn, HelpCircle } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Board } from "./board";
 import { Keyboard } from "./keyboard";
 import { Toast } from "./toast";
@@ -312,14 +313,17 @@ export function WordleGame() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
-          onClick={() => setStatsOpen(true)}
-          aria-label="Statistics"
-        >
-          <ChartNoAxesColumn className="h-5 w-5" aria-hidden />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
+            onClick={() => setStatsOpen(true)}
+            aria-label="Statistics"
+          >
+            <ChartNoAxesColumn className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
       </header>
 
       <Toast message={toast} />

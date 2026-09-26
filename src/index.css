@@ -5,7 +5,8 @@
   --font-display: "Fraunces", ui-serif, Georgia, serif;
 }
 
-:root {
+:root,
+[data-theme="light"] {
   --background: #e8efe6;
   --ink: #1c2420;
   --ink-muted: #5a6b61;
@@ -19,11 +20,54 @@
   --tile-absent: #6b756e;
   --key-bg: #d0dbce;
   --bar-track: #d5e0d2;
+  --bg-glow-top: #f7faf5;
+  --bg-glow-br: #d4e3d6;
+  --bg-glow-bl: #dde8da;
   /* Fluid tile size: fits ~5 tiles + gaps on 320px–desktop */
   --tile-size: clamp(2.65rem, 13.5vmin, 3.85rem);
   --tile-gap: clamp(0.25rem, 1.2vmin, 0.4rem);
   --tile-font: clamp(1.15rem, 5.5vmin, 1.85rem);
   --key-h: clamp(2.75rem, 12vmin, 3.5rem);
+}
+
+[data-theme="dark"] {
+  --background: #121a16;
+  --ink: #e8efe6;
+  --ink-muted: #9aaba0;
+  --panel: #1a2420;
+  --panel-border: #2f3f36;
+  --accent-brand: #5cb87f;
+  --tile-border: #3d4f44;
+  --tile-border-filled: #e8efe6;
+  --tile-correct: #3a8f5c;
+  --tile-present: #d4ae3a;
+  --tile-absent: #3d4540;
+  --key-bg: #2a3530;
+  --bar-track: #2a3530;
+  --bg-glow-top: #1c2a22;
+  --bg-glow-br: #152018;
+  --bg-glow-bl: #18241c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #121a16;
+    --ink: #e8efe6;
+    --ink-muted: #9aaba0;
+    --panel: #1a2420;
+    --panel-border: #2f3f36;
+    --accent-brand: #5cb87f;
+    --tile-border: #3d4f44;
+    --tile-border-filled: #e8efe6;
+    --tile-correct: #3a8f5c;
+    --tile-present: #d4ae3a;
+    --tile-absent: #3d4540;
+    --key-bg: #2a3530;
+    --bar-track: #2a3530;
+    --bg-glow-top: #1c2a22;
+    --bg-glow-br: #152018;
+    --bg-glow-bl: #18241c;
+  }
 }
 
 html {
@@ -46,9 +90,9 @@ body {
   color: var(--ink);
   background-color: var(--background);
   background-image:
-    radial-gradient(ellipse 120% 80% at 50% -20%, #f7faf5 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 100% 100%, #d4e3d6 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 0% 80%, #dde8da 0%, transparent 45%);
+    radial-gradient(ellipse 120% 80% at 50% -20%, var(--bg-glow-top) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 100%, var(--bg-glow-br) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 80%, var(--bg-glow-bl) 0%, transparent 45%);
   background-attachment: fixed;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
@@ -258,6 +302,53 @@ body {
     rgba(0, 0, 0, 0.22) 48%,
     transparent 49%
   );
+}
+
+/* Dark: lighter overlays so patterns stay visible on dark absent tiles */
+[data-theme="dark"] .tile-pattern-correct {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+[data-theme="dark"] .tile-pattern-present {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.28) 3px,
+    rgba(255, 255, 255, 0.28) 6px
+  );
+}
+[data-theme="dark"] .tile-pattern-absent {
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 42%,
+    rgba(255, 255, 255, 0.3) 43%,
+    rgba(255, 255, 255, 0.3) 48%,
+    transparent 49%
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tile-pattern-correct {
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+  }
+  :root:not([data-theme="light"]) .tile-pattern-present {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgba(255, 255, 255, 0.28) 3px,
+      rgba(255, 255, 255, 0.28) 6px
+    );
+  }
+  :root:not([data-theme="light"]) .tile-pattern-absent {
+    background-image: radial-gradient(
+      circle at 50% 50%,
+      transparent 42%,
+      rgba(255, 255, 255, 0.3) 43%,
+      rgba(255, 255, 255, 0.3) 48%,
+      transparent 49%
+    );
+  }
 }
 
 .skip-link {
