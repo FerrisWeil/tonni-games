@@ -112,7 +112,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f dist/index.html
-          test -d dist.assets
+          test -d dist/assets
           echo "dist/ ready ($(du -sh dist | cut -f1))"
 
       - name: Verify Vercel serverless API routes
