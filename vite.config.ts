@@ -17,7 +17,7 @@ export default defineConfig({
     port: 43127,
     host: "127.0.0.1",
     proxy: {
-      // Personal NYT spike — browser CORS blocks direct nytimes.com (ADR 0009).
+      // Personal NYT spike — browser CORS blocks direct nytimes.com (ADR 0009 / PR #3).
       "/api/wordle-nyt": {
         target: "https://www.nytimes.com",
         changeOrigin: true,
@@ -34,6 +34,9 @@ export default defineConfig({
     host: "127.0.0.1",
   },
   test: {
-    environment: "node",
+    environment: "happy-dom",
+    setupFiles: ["./src/test/setup.ts"],
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    css: false,
   },
 });
