@@ -32,6 +32,19 @@ export interface ThemeTokens {
   bgGlowBl: string;
   /** Browser chrome / theme-color meta */
   themeColor: string;
+  /** Connections difficulty colors + tiles (ADR 0013) */
+  connYellow: string;
+  connGreen: string;
+  connBlue: string;
+  connPurple: string;
+  connYellowInk: string;
+  connGreenInk: string;
+  connBlueInk: string;
+  connPurpleInk: string;
+  connTileBg: string;
+  connTileSelected: string;
+  connTileSelectedInk: string;
+  connTileInk: string;
 }
 
 export interface ThemePreview {
@@ -67,6 +80,18 @@ const CLASSIC_TOKENS: ThemeTokens = {
   bgGlowBr: "#d4e3d6",
   bgGlowBl: "#dde8da",
   themeColor: "#e8efe6",
+  connYellow: "#f0d060",
+  connGreen: "#a0c35a",
+  connBlue: "#b0c4ef",
+  connPurple: "#ba81c5",
+  connYellowInk: "#1c2420",
+  connGreenInk: "#1c2420",
+  connBlueInk: "#1c2420",
+  connPurpleInk: "#1c2420",
+  connTileBg: "#efefe6",
+  connTileSelected: "#5a6b61",
+  connTileSelectedInk: "#f4f7f2",
+  connTileInk: "#1c2420",
 };
 
 const MIDNIGHT_TOKENS: ThemeTokens = {
@@ -87,6 +112,18 @@ const MIDNIGHT_TOKENS: ThemeTokens = {
   bgGlowBr: "#152018",
   bgGlowBl: "#18241c",
   themeColor: "#121a16",
+  connYellow: "#c9a227",
+  connGreen: "#3a8f5c",
+  connBlue: "#5a7ec4",
+  connPurple: "#9b5fad",
+  connYellowInk: "#121a16",
+  connGreenInk: "#e8efe6",
+  connBlueInk: "#e8efe6",
+  connPurpleInk: "#e8efe6",
+  connTileBg: "#2a3530",
+  connTileSelected: "#9aaba0",
+  connTileSelectedInk: "#121a16",
+  connTileInk: "#e8efe6",
 };
 
 const HIGH_CONTRAST_TOKENS: ThemeTokens = {
@@ -107,6 +144,18 @@ const HIGH_CONTRAST_TOKENS: ThemeTokens = {
   bgGlowBr: "#0a0a0a",
   bgGlowBl: "#0a0a0a",
   themeColor: "#0a0a0a",
+  connYellow: "#ffd600",
+  connGreen: "#00c853",
+  connBlue: "#40c4ff",
+  connPurple: "#e040fb",
+  connYellowInk: "#0a0a0a",
+  connGreenInk: "#0a0a0a",
+  connBlueInk: "#0a0a0a",
+  connPurpleInk: "#0a0a0a",
+  connTileBg: "#2a2a2a",
+  connTileSelected: "#ffffff",
+  connTileSelectedInk: "#0a0a0a",
+  connTileInk: "#ffffff",
 };
 
 /** Playful warm moss / ochre — not purple AI-slop. */
@@ -128,6 +177,18 @@ const MEADOW_TOKENS: ThemeTokens = {
   bgGlowBr: "#e8dfc8",
   bgGlowBl: "#ebe4d4",
   themeColor: "#f3eee3",
+  connYellow: "#e6c35c",
+  connGreen: "#8faf4a",
+  connBlue: "#9eb6d9",
+  connPurple: "#b888b0",
+  connYellowInk: "#2a2418",
+  connGreenInk: "#2a2418",
+  connBlueInk: "#2a2418",
+  connPurpleInk: "#2a2418",
+  connTileBg: "#e8e0d0",
+  connTileSelected: "#6e6454",
+  connTileSelectedInk: "#faf6ee",
+  connTileInk: "#2a2418",
 };
 
 /** Built-in themes. Order = picker display order. */
@@ -232,4 +293,16 @@ export const TOKEN_CSS_VARS: Record<keyof ThemeTokens, string> = {
   bgGlowBr: "--bg-glow-br",
   bgGlowBl: "--bg-glow-bl",
   themeColor: "--theme-color",
+  connYellow: "--conn-yellow",
+  connGreen: "--conn-green",
+  connBlue: "--conn-blue",
+  connPurple: "--conn-purple",
+  connYellowInk: "--conn-yellow-ink",
+  connGreenInk: "--conn-green-ink",
+  connBlueInk: "--conn-blue-ink",
+  connPurpleInk: "--conn-purple-ink",
+  connTileBg: "--conn-tile-bg",
+  connTileSelected: "--conn-tile-selected",
+  connTileSelectedInk: "--conn-tile-selected-ink",
+  connTileInk: "--conn-tile-ink",
 };
