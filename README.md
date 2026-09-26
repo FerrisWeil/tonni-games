@@ -108,4 +108,22 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 
 ## Deploy
 
-See `.github/workflows/deploy-vercel.yml`. Optional GitHub secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Supports `workflow_dispatch` on `main`. Avoid thrashing Vercel Hobby quota.
+Workflow: `.github/workflows/deploy-vercel.yml`.
+
+| Job | When | What |
+| --- | --- | --- |
+| `build` | PRs + `main` | `pnpm test` + `pnpm build` |
+| **Verify Vercel build** (`vercel-build`) | PRs + `main` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
+| **Deploy production (hook)** | `push` to `main` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). Skipped on PRs. |
+
+### Secrets
+
+| Secret | Required? | Notes |
+| --- | --- | --- |
+| `VERCEL_DEPLOY_HOOK_URL` | Optional | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated. |
+| `VERCEL_TOKEN` | **Not used by current GHA** | Past tokens authenticate but **404 / cannot read project settings** for `tonni-games` (`vercel pull` → “Could not retrieve Project Settings”). Do **not** rely on CLI deploy until rotated. |
+| `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Optional (CLI only) | Team `team_xNSXW3QfytHiY0cKnRgj222W` (`ferrisweils-projects`), project `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`. |
+
+To restore CLI `vercel pull` + `vercel build` verification later: create a Vercel token that can **read** team **ferrisweils-projects** / project **tonni-games** (account-level token owned by a member of that team, or a token scoped to that project), set `VERCEL_TOKEN` (+ org/project IDs), then switch the verify job to `vercel pull --yes --environment=preview` + `vercel build`. Until then, the local parity job is the merge gate; production promote stays on the Deploy Hook.
+
+Avoid thrashing Vercel Hobby daily deploy quota.

@@ -38,37 +38,130 @@ jobs:
       - name: Build
         run: pnpm build
 
-  deploy:
-    needs: build
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+  # Gates PRs without thrashing production. Does not call vercel pull/build —
+  # VERCEL_TOKEN authenticates but cannot read this project (404 / Project Settings).
+  # See README Deploy section for required token scopes if restoring CLI verification.
+  vercel-build:
+    name: Verify Vercel build
     runs-on: ubuntu-latest
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Vercel CLI
-        run: npm install -g vercel@latest
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
-      - name: Check secrets
-        id: secrets
-        run: |
-          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping deploy: set VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID repository secrets."
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-            case "$VERCEL_ORG_ID" in team_*) echo "org_id_shape=team_id" ;; *) echo "org_id_shape=other($VERCEL_ORG_ID)" ;; esac
-            case "$VERCEL_PROJECT_ID" in prj_*) echo "project_id_shape=prj_id" ;; *) echo "project_id_shape=other" ;; esac
-          fi
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
 
-      - name: Deploy production
-        if: steps.secrets.outputs.configured == 'true'
+      - name: Validate vercel.json
         run: |
           set -euo pipefail
-          # Remote build+deploy; avoids fragile `vercel pull` project-link failures.
-          # --scope accepts team id (team_...) or team slug.
-          vercel deploy --prod --yes --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
+          test -f vercel.json
+          node <<'NODE'
+          const fs = require("node:fs");
+          const cfg = JSON.parse(fs.readFileSync("vercel.json", "utf8"));
+          const required = ["buildCommand", "outputDirectory", "framework", "installCommand"];
+          for (const key of required) {
+            if (!cfg[key] || typeof cfg[key] !== "string") {
+              console.error(`vercel.json missing string field: ${key}`);
+              process.exit(1);
+            }
+          }
+          if (cfg.framework !== "vite") {
+            console.error(`expected framework "vite", got ${cfg.framework}`);
+            process.exit(1);
+          }
+          if (cfg.buildCommand !== "pnpm build") {
+            console.error(`expected buildCommand "pnpm build", got ${cfg.buildCommand}`);
+            process.exit(1);
+          }
+          if (cfg.outputDirectory !== "dist") {
+            console.error(`expected outputDirectory "dist", got ${cfg.outputDirectory}`);
+            process.exit(1);
+          }
+          if (!Array.isArray(cfg.rewrites) || cfg.rewrites.length === 0) {
+            console.error("vercel.json must declare SPA rewrites that spare /api/*");
+            process.exit(1);
+          }
+          const spa = cfg.rewrites.some(
+            (r) =>
+              typeof r.source === "string" &&
+              r.source.includes("api") &&
+              r.destination === "/index.html",
+          );
+          if (!spa) {
+            console.error("vercel.json rewrites must SPA-fallback non-api routes to /index.html");
+            process.exit(1);
+          }
+          console.log("vercel.json OK:", JSON.stringify(cfg, null, 2));
+          NODE
+
+      - name: Install (vercel.json installCommand, frozen)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (vercel.json buildCommand)
+        run: pnpm build
+
+      - name: Assert outputDirectory
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -d dist/assets
+          echo "dist/ ready ($(du -sh dist | cut -f1))"
+
+      - name: Verify Vercel serverless API routes
+        run: |
+          set -euo pipefail
+          routes=(
+            "api/wordle-nyt/[date].ts"
+            "api/connections-nyt/[date].ts"
+          )
+          for f in "${routes[@]}"; do
+            test -f "$f"
+            grep -q "export default" "$f"
+            echo "OK $f"
+          done
+          # Catch syntax/type errors in API handlers (same files Vercel compiles).
+          pnpm exec tsc --ignoreConfig --pretty false --strict --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck --noEmit \
+            "api/wordle-nyt/[date].ts" \
+            "api/connections-nyt/[date].ts"
+          echo "API routes typecheck OK"
+
+      - name: Note on VERCEL_TOKEN / vercel CLI
+        run: |
+          cat <<'EOF'
+          ::notice title=Verify Vercel build::Local parity check only (vercel.json + pnpm build + api/*.ts).
+          Full `vercel pull` / `vercel build` is not run here: the repo VERCEL_TOKEN
+          authenticates but returns 404 / cannot read project settings for tonni-games.
+          Production promote uses the Deploy Hook (see deploy job). To enable CLI
+          verification later, rotate VERCEL_TOKEN to a token with access to team
+          ferrisweils-projects / project tonni-games (Full Account or the project).
+          EOF
+
+  # Production promote only — not on PRs. VERCEL_TOKEN CLI deploy 404s; use Deploy Hook.
+  deploy:
+    name: Deploy production (hook)
+    needs: [build, vercel-build]
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel production deploy hook
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          # Prefer secret override; fallback is the project Deploy Hook for main (PR #8).
+          HOOK="${DEPLOY_HOOK_URL:-https://api.vercel.com/v1/integrations/deploy/prj_xpylCQ0S9SSuj8DYmOsctzSp3emH/080bdhUrpY}"
+          echo "Triggering Vercel deploy hook for main (build verification ≠ this promote)…"
+          resp=$(curl -sS -X POST "$HOOK")
+          echo "$resp"
+          echo "$resp" | grep -q '"state"' || {
+            echo "::error::Deploy hook did not return a job payload. Check VERCEL_DEPLOY_HOOK_URL or Hobby rate limits."
+            exit 1
+          }
