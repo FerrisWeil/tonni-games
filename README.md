@@ -2,7 +2,7 @@
 
 Free NYT-style puzzle games for Tonni. No paywall, no play limits.
 
-Games are built independently; a multi-game shell comes later. Backend/sign-in is deferred — progress uses **localStorage**.
+Games are built independently; a multi-game shell comes later. **Sign-in** uses Supabase Auth (Google + email magic link) at `/account`. Play progress still uses **localStorage** until packs land; without Supabase env vars, Account shows “Sign-in unavailable” and games keep working.
 
 ## Stack
 
@@ -19,7 +19,8 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 | Route | What |
 | --- | --- |
-| `/` | Home — Wordle, Builder, Connections, Themes |
+| `/` | Home — Wordle, Builder, Connections, Themes + Account |
+| `/account` | Sign in (Google / magic link) or account + sign out |
 | `/themes` | Built-in theme picker (persists) |
 | `/wordle` | Daily Wordle |
 | `/wordle/builder` | Create a custom Wordle + share link |
@@ -86,6 +87,31 @@ Theme rows use **static sizes** (no layout shift when selecting). Shared **`AppS
 
 Add a `ThemeDefinition` in `src/themes/registry.ts` (or call `registerTheme()` at runtime). Board/keyboard/Connections already consume tokens; no game rewrites needed.
 
+## Sign-in (Supabase Auth)
+
+Account UI: **`/account`** (home header → Sign in / Account). Providers: **Google** + **email magic link**. Uses shared **`AppShell`** (ADR 0021). Missing env → “Sign-in unavailable”; games still work.
+
+```bash
+cp .env.example .env.local
+# set VITE_SUPABASE_ANON_KEY from Supabase → Project Settings → API
+pnpm dev
+```
+
+### Taylor setup (live OAuth)
+
+1. **Vercel env** — `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (Production + Preview), redeploy.
+2. **Supabase → Authentication → URL Configuration** — Site URL `https://tonni-games.vercel.app`; Redirect URLs:
+   - `http://127.0.0.1:43127/account`
+   - `http://localhost:43127/account`
+   - `https://tonni-games.vercel.app/account`
+   - preview hosts as needed
+3. **Google Cloud** — OAuth Web client; JS origins for local + production; redirect URI `https://vycergkxkrpsbxoglrws.supabase.co/auth/v1/callback`.
+4. **Supabase → Providers → Google** — enable; paste Client ID + Secret.
+5. **Email** — Providers → Email enabled for magic links.
+6. **Profiles** — apply `supabase/migrations/20260926170000_profiles.sql` (safe to re-run).
+
+Wordle Builder stays on separate routes (`/wordle/builder`, `/w/:code`).
+
 ## Testing
 
 Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolve / persist / apply, and Connections grouping/validation/share. Full Playwright PR matrix follows ADR 0008 — not required to ship playable games.
@@ -95,9 +121,16 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 | Path | Role |
 | --- | --- |
 | `src/pages/home.tsx` | Home (`/`) |
+| `src/pages/account.tsx` | Sign-in / account (`/account`) |
 | `src/pages/themes.tsx` | Theme picker (`/themes`) |
 | `src/pages/wordle.tsx` | Wordle (`/wordle`) |
+| `src/pages/wordle-builder.tsx` | Custom Wordle builder |
+| `src/pages/wordle-custom-play.tsx` | Play encoded share codes |
 | `src/pages/connections.tsx` | Connections (`/connections`) |
+| `src/components/app-shell.tsx` | Anchored header + body scroll |
+| `src/components/auth-context.tsx` | Supabase session provider |
+| `src/lib/supabase.ts` | Supabase client (null if env missing) |
+| `supabase/migrations/` | Profiles (+ later packs) SQL |
 | `src/components/wordle/` | Wordle UI |
 | `src/components/connections/` | Connections UI |
 | `src/lib/connections/` | Logic, NYT parse, packs loader, share |
@@ -130,7 +163,7 @@ Both use the **same Supabase backend/login** for now (`VITE_SUPABASE_URL` + `VIT
 ### Production — `.github/workflows/deploy-vercel.yml` (ADR 0025)
 
 | Job | When | What |
-| --- | --- |
+| --- | --- | --- |
 | `build` | PRs + `master` | `pnpm test` + `pnpm build` |
 | **Verify Vercel build** (`vercel-build`) | PRs + `master` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
 | **Deploy production (hook)** | `push` to `master` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). **Never** on `pull_request`. |
@@ -160,7 +193,7 @@ Requires secret **`VERCEL_DEV_DEPLOY_HOOK_URL`**. Create the hook: Vercel → **
 ### Secrets
 
 | Secret | Required? | Notes |
-| --- | --- |
+| --- | --- | --- |
 | `VERCEL_DEPLOY_HOOK_URL` | Optional (prod) | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated (required after `master` rename if the old hook targeted `main`). |
 | `VERCEL_DEV_DEPLOY_HOOK_URL` | **Required for Deploy to Dev** | Deploy Hook on **Tonni-games-dev** (`tonni-games-dev`) for branch **`master`**. |
 | `VERCEL_DEV_PROJECT_ID` | Optional (docs / future CLI) | `prj_RJRUctklGEubeVOWxSOUhdfWa4tO` |

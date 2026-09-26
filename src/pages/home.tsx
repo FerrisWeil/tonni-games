@@ -1,10 +1,14 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { UserRound } from "lucide-react";
+import { useAuth } from "@/components/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const HOME_SCROLL_LOCK = "home-scroll-lock";
 
 export function HomePage() {
+  const { user, status, configured } = useAuth();
+
   useEffect(() => {
     const root = document.documentElement;
     root.classList.add(HOME_SCROLL_LOCK);
@@ -13,9 +17,30 @@ export function HomePage() {
     };
   }, []);
 
+  const accountLabel =
+    status === "loading"
+      ? "Account"
+      : user
+        ? user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.email?.split("@")[0] ||
+          "Account"
+        : configured
+          ? "Sign in"
+          : "Account";
+
   return (
     <div className="home-shell relative mx-auto flex h-dvh max-h-dvh w-full max-w-lg flex-col items-center justify-center overflow-hidden px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
-      <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-2 sm:right-4">
+      <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-2 flex items-center gap-1 sm:right-4">
+        <Link
+          to="/account"
+          className="inline-flex min-h-11 max-w-[9rem] items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
+          aria-label={user ? `Account — ${accountLabel}` : "Sign in"}
+          style={{ touchAction: "manipulation" }}
+        >
+          <UserRound className="h-5 w-5 shrink-0" aria-hidden />
+          <span className="truncate">{accountLabel}</span>
+        </Link>
         <ThemeToggle />
       </div>
       <h1 className="font-display text-[clamp(1.75rem,7vmin,3rem)] font-semibold tracking-tight text-[var(--ink)]">
