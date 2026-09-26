@@ -1,12 +1,14 @@
 import { cn } from "@/lib/utils";
+import { tileAriaLabel } from "@/lib/letter-state";
 import type { LetterState } from "@/lib/types";
 
 const stateClass: Record<LetterState, string> = {
-  empty: "border-2 border-[var(--tile-border)] bg-transparent text-[var(--ink)]",
+  empty:
+    "border-2 border-[var(--tile-border)] bg-transparent text-[var(--ink)]",
   tbd: "border-2 border-[var(--tile-border-filled)] bg-transparent text-[var(--ink)]",
-  correct: "border-0 bg-[var(--tile-correct)] text-white",
-  present: "border-0 bg-[var(--tile-present)] text-white",
-  absent: "border-0 bg-[var(--tile-absent)] text-white",
+  correct: "border-0 bg-[var(--tile-correct)] text-white tile-pattern-correct",
+  present: "border-0 bg-[var(--tile-present)] text-white tile-pattern-present",
+  absent: "border-0 bg-[var(--tile-absent)] text-white tile-pattern-absent",
 };
 
 interface TileProps {
@@ -16,15 +18,26 @@ interface TileProps {
   shake?: boolean;
 }
 
-export function Tile({ letter, state, popping = false, shake = false }: TileProps) {
+export function Tile({
+  letter,
+  state,
+  popping = false,
+  shake = false,
+}: TileProps) {
   return (
-    <div className={cn("wordle-tile", shake && "animate-tile-shake")}>
+    <div
+      className={cn("wordle-tile", shake && "animate-tile-shake")}
+      role="img"
+      aria-label={tileAriaLabel(letter, state)}
+      data-state={state}
+    >
       <div
         className={cn(
           "tile-face absolute inset-0 flex items-center justify-center",
           popping && letter && "animate-tile-pop",
           stateClass[state],
         )}
+        aria-hidden="true"
       >
         {letter}
       </div>
