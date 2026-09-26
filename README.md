@@ -2,7 +2,7 @@
 
 Free daily Wordle for Tonni. Classic rules, no paywall, no play limits.
 
-Games are built independently; a multi-game shell comes later. Backend/sign-in is deferred — board and stats use **localStorage**.
+Optimized for **mobile** — snappy touch feedback and basic accessibility ([ADR 0010](https://github.com/FerrisWeil/tonni-games)). Games are built independently; a multi-game shell comes later. Backend/sign-in is deferred — board and stats use **localStorage**.
 
 ## Stack
 
@@ -23,25 +23,20 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 | `/wordle` | Playable Wordle (direct URL) |
 
 ```bash
-pnpm test     # evaluation unit tests
-pnpm build    # production → dist/
-pnpm preview  # serve production build
+pnpm test            # Vitest unit + component (RTL)
+pnpm test:e2e:smoke  # Playwright smoke (desktop + phone-md)
+pnpm build           # production → dist/
+pnpm preview         # serve production build
 ```
 
-## Personal NYT source spike
+### Optional NYT source (personal/family — ADR 0009)
 
-Default puzzle source is the **local Tonni list**. For personal/family testing only (not monetized; usage-rights risk accepted):
+Default is the local Tonni schedule. Opt in without changing production defaults:
 
-```bash
-# Env (rebuild/restart after changing)
-VITE_WORDLE_SOURCE=nyt pnpm dev
-
-# Or query (no rebuild)
-# http://127.0.0.1:43127/wordle?source=nyt
-# http://127.0.0.1:43127/wordle?source=nyt&date=2022-01-01
-```
-
-Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `/api/wordle-nyt/{YYYY-MM-DD}` (Vite proxy in dev; Vercel serverless in prod). If the fetch fails, the game falls back to the local list and shows a toast.
+- Query: `/wordle?source=nyt` (optional `&date=YYYY-MM-DD`)
+- Env: `VITE_WORDLE_SOURCE=nyt`
+- Same-origin proxy: `/api/wordle-nyt/{YYYY-MM-DD}` (Vite in dev; Vercel `api/wordle-nyt/[date].ts` in prod)
+- Fetch failure → toast + soft fallback to local list
 
 ## Where the game lives
 
@@ -50,14 +45,14 @@ Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `
 | `src/pages/home.tsx` | Minimal home (`/`) |
 | `src/pages/wordle.tsx` | Wordle route (`/wordle`) |
 | `src/components/wordle/` | Board, keyboard, stats, how-to-play UI |
-| `src/lib/daily.ts` | Deterministic day → solution (default) |
-| `src/lib/nyt-wordle.ts` | Opt-in NYT JSON parse + fetch (spike) |
-| `api/wordle-nyt/[date].ts` | Vercel proxy for NYT `svc/wordle/v2` |
+| `src/lib/daily.ts` | Deterministic day → solution |
+| `src/lib/nyt-wordle.ts` | Opt-in NYT fetch client (ADR 0009) |
 | `src/lib/evaluate.ts` | Official-style tile colors (incl. doubles) |
 | `src/lib/storage.ts` | localStorage board + stats |
 | `src/data/` | Solutions + allowed guesses |
 | `src/App.tsx` | React Router routes |
+| `e2e/` | Playwright smoke tests |
 
 ## Deploy
 
-See `.github/workflows/deploy-vercel.yml`. Optional GitHub secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+See `.github/workflows/deploy-vercel.yml` and `.github/workflows/ci.yml`. Optional GitHub secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
