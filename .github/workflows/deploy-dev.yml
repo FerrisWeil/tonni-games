@@ -1,0 +1,85 @@
+name: Deploy to Dev
+
+# On-demand only → Vercel project Tonni-games-dev (platform name: tonni-games-dev).
+# Does NOT run on push/PR. Prod stays on Deploy to Vercel (ADR 0025 / 0026).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (default: current branch / master)"
+        required: false
+        default: ""
+
+concurrency:
+  group: vercel-dev-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || github.ref }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  deploy-dev:
+    name: Deploy Tonni-games-dev (hook)
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Tonni-games-dev Deploy Hook
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEV_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEPLOY_HOOK_URL:-}" ]; then
+            cat <<'EOF'
+          ::error::Missing secret VERCEL_DEV_DEPLOY_HOOK_URL.
+          Create a Deploy Hook on Vercel project tonni-games-dev (Tonni-games-dev)
+          for branch **master**, then set the repo secret to that URL.
+          Project id: prj_RJRUctklGEubeVOWxSOUhdfWa4tO
+          Team: ferrisweils-projects (team_xNSXW3QfytHiY0cKnRgj222W)
+          Dashboard: Project → Settings → Git → Deploy Hooks → Name "on-demand-dev", Branch "master".
+          Optional companion secrets (docs only / future CLI): VERCEL_DEV_PROJECT_ID=prj_RJRUctklGEubeVOWxSOUhdfWa4tO
+          EOF
+            exit 1
+          fi
+          echo "Triggering Tonni-games-dev Deploy Hook (on-demand; not production)…"
+          http_code=$(curl -sS -o /tmp/hook-resp.json -w "%{http_code}" -X POST "$DEPLOY_HOOK_URL")
+          resp=$(cat /tmp/hook-resp.json)
+          echo "HTTP $http_code"
+          echo "$resp"
+          if echo "$resp" | grep -qiE 'rate.?limit|upgradeToPro|api-deployments-free'; then
+            echo "::error::Vercel Hobby deploy rate limit hit. Wait ~24h or upgrade."
+            exit 1
+          fi
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Dev Deploy Hook HTTP $http_code. Rotate VERCEL_DEV_DEPLOY_HOOK_URL or recreate the hook for master on tonni-games-dev."
+            exit 1
+          fi
+          echo "$resp" | grep -q '"job"' || {
+            echo "::error::Deploy Hook response missing job payload."
+            exit 1
+          }
+          echo "::notice::Dev Deploy Hook accepted. Build runs on Vercel project tonni-games-dev (https://tonni-games-dev.vercel.app after READY)."
