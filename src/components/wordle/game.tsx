@@ -12,6 +12,11 @@ import {
   getSolutionForDate,
   isValidGuess,
 } from "@/lib/daily";
+import {
+  fetchNytWordlePuzzle,
+  resolveArchiveDateKey,
+  resolveWordleSource,
+} from "@/lib/nyt-wordle";
 import { buildKeyboardStates } from "@/lib/evaluate";
 import {
   loadGame,
@@ -40,24 +45,62 @@ export function WordleGame() {
   const [revealingRow, setRevealingRow] = useState<number | null>(null);
   const [statsOpen, setStatsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [sourceLabel, setSourceLabel] = useState<"local" | "nyt">("local");
   const revealingRef = useRef(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const key = getLocalDateKey();
-    const sol = getSolutionForDate(key);
-    const saved = loadGame(key);
-    setDateKey(key);
-    setSolution(sol);
-    setGuesses(saved.guesses);
-    setCurrentGuess(saved.currentGuess);
-    setStatus(saved.status);
-    setStats(loadStats());
-    setHydrated(true);
-    if (saved.status !== "playing") {
-      const t = setTimeout(() => setStatsOpen(true), 400);
-      return () => clearTimeout(t);
+    let cancelled = false;
+    let openStatsTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const showToastLocal = (message: string, ms = 1600) => {
+      setToast(message);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToast(null), ms);
+    };
+
+    async function hydrate() {
+      const localKey = getLocalDateKey();
+      const source = resolveWordleSource();
+      let key = localKey;
+      let sol = getSolutionForDate(localKey);
+      let used: "local" | "nyt" = "local";
+
+      if (source === "nyt") {
+        const archiveKey = resolveArchiveDateKey(window.location.search, localKey);
+        try {
+          const puzzle = await fetchNytWordlePuzzle(archiveKey);
+          if (cancelled) return;
+          key = puzzle.printDate;
+          sol = puzzle.solution;
+          used = "nyt";
+        } catch {
+          if (cancelled) return;
+          // Soft fallback — production default stays local if NYT blocks/fails.
+          showToastLocal("NYT source unavailable — using Tonni list", 2800);
+        }
+      }
+
+      if (cancelled) return;
+      const saved = loadGame(key);
+      setDateKey(key);
+      setSolution(sol);
+      setSourceLabel(used);
+      setGuesses(saved.guesses);
+      setCurrentGuess(saved.currentGuess);
+      setStatus(saved.status);
+      setStats(loadStats());
+      setHydrated(true);
+      if (saved.status !== "playing") {
+        openStatsTimer = setTimeout(() => setStatsOpen(true), 400);
+      }
     }
+
+    void hydrate();
+    return () => {
+      cancelled = true;
+      if (openStatsTimer) clearTimeout(openStatsTimer);
+    };
   }, []);
 
   const showToast = useCallback((message: string, ms = 1600) => {
@@ -223,6 +266,7 @@ export function WordleGame() {
           </p>
           <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-[var(--accent-brand)] uppercase">
             Wordle · #{getPuzzleNumber(dateKey)}
+            {sourceLabel === "nyt" ? " · test source" : ""}
           </p>
         </div>
 
