@@ -398,5 +398,5 @@ export const SOLUTIONS_4 = [
   "synod",
   "syrup",
   "tabby",
-  "table",
+  "table"
 ] as const;
