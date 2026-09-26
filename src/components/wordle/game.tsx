@@ -32,6 +32,17 @@ import {
   type Stats,
 } from "@/lib/types";
 
+const REVEAL_STAGGER_MS = 220;
+const REVEAL_FLIP_MS = 420;
+const REVEAL_TOTAL_MS = WORD_LENGTH * REVEAL_STAGGER_MS + REVEAL_FLIP_MS;
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 export function WordleGame() {
   const [hydrated, setHydrated] = useState(false);
   const [dateKey, setDateKey] = useState("");
@@ -46,8 +57,14 @@ export function WordleGame() {
   const [statsOpen, setStatsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [sourceLabel, setSourceLabel] = useState<"local" | "nyt">("local");
+  const [statusAnn, setStatusAnn] = useState("");
   const revealingRef = useRef(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentGuessRef = useRef("");
+
+  useEffect(() => {
+    currentGuessRef.current = currentGuess;
+  }, [currentGuess]);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +72,7 @@ export function WordleGame() {
 
     const showToastLocal = (message: string, ms = 1600) => {
       setToast(message);
+      setStatusAnn(message);
       if (toastTimer.current) clearTimeout(toastTimer.current);
       toastTimer.current = setTimeout(() => setToast(null), ms);
     };
@@ -67,7 +85,10 @@ export function WordleGame() {
       let used: "local" | "nyt" = "local";
 
       if (source === "nyt") {
-        const archiveKey = resolveArchiveDateKey(window.location.search, localKey);
+        const archiveKey = resolveArchiveDateKey(
+          window.location.search,
+          localKey,
+        );
         try {
           const puzzle = await fetchNytWordlePuzzle(archiveKey);
           if (cancelled) return;
@@ -76,7 +97,6 @@ export function WordleGame() {
           used = "nyt";
         } catch {
           if (cancelled) return;
-          // Soft fallback — production default stays local if NYT blocks/fails.
           showToastLocal("NYT source unavailable — using Tonni list", 2800);
         }
       }
@@ -88,6 +108,7 @@ export function WordleGame() {
       setSourceLabel(used);
       setGuesses(saved.guesses);
       setCurrentGuess(saved.currentGuess);
+      currentGuessRef.current = saved.currentGuess;
       setStatus(saved.status);
       setStats(loadStats());
       setHydrated(true);
@@ -103,8 +124,9 @@ export function WordleGame() {
     };
   }, []);
 
-  const showToast = useCallback((message: string, ms = 1600) => {
+  const showToast = useCallback((message: string, ms = 1400) => {
     setToast(message);
+    setStatusAnn(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), ms);
   }, []);
@@ -133,39 +155,49 @@ export function WordleGame() {
         nextGuesses.length,
       );
       setStats(updated);
+      const juiceMs = prefersReducedMotion() ? 120 : 700;
       setTimeout(() => {
-        if (nextStatus === "won") showToast("Magnificent!", 2000);
-        else showToast(solution.toUpperCase(), 2500);
-        setStatsOpen(true);
-      }, 1600);
+        if (nextStatus === "won") {
+          showToast("Magnificent!", 2000);
+          setStatusAnn(`You won in ${nextGuesses.length} guesses.`);
+        } else {
+          showToast(solution.toUpperCase(), 2500);
+          setStatusAnn(`The word was ${solution.toUpperCase()}.`);
+        }
+      }, juiceMs);
+      const statsMs = prefersReducedMotion() ? 500 : 2000;
+      setTimeout(() => setStatsOpen(true), juiceMs + statsMs);
     },
     [dateKey, persist, showToast, solution],
   );
 
   const submitGuess = useCallback(() => {
     if (status !== "playing" || revealingRef.current) return;
-    if (currentGuess.length < WORD_LENGTH) {
+    const guessNow = currentGuessRef.current;
+    if (guessNow.length < WORD_LENGTH) {
       showToast("Not enough letters");
       setShakeRow(true);
-      setTimeout(() => setShakeRow(false), 500);
+      setTimeout(() => setShakeRow(false), prefersReducedMotion() ? 0 : 450);
       return;
     }
-    if (!isValidGuess(currentGuess)) {
+    if (!isValidGuess(guessNow)) {
       showToast("Not in word list");
       setShakeRow(true);
-      setTimeout(() => setShakeRow(false), 500);
+      setTimeout(() => setShakeRow(false), prefersReducedMotion() ? 0 : 450);
       return;
     }
 
-    const guess = currentGuess;
+    const guess = guessNow;
     const nextGuesses = [...guesses, guess];
     revealingRef.current = true;
     setRevealingRow(guesses.length);
     setGuesses(nextGuesses);
     setCurrentGuess("");
+    currentGuessRef.current = "";
     persist({ guesses: nextGuesses, currentGuess: "" });
+    setStatusAnn(`Guess ${nextGuesses.length}: ${guess.toUpperCase()}`);
 
-    const revealMs = 5 * 300 + 200;
+    const revealMs = prefersReducedMotion() ? 80 : REVEAL_TOTAL_MS;
     setTimeout(() => {
       setRevealingRow(null);
       revealingRef.current = false;
@@ -175,37 +207,39 @@ export function WordleGame() {
         finishGame(nextGuesses, "lost");
       }
     }, revealMs);
-  }, [status, currentGuess, guesses, persist, showToast, solution, finishGame]);
+  }, [status, guesses, persist, showToast, solution, finishGame]);
 
   const onKey = useCallback(
     (key: string) => {
       if (!hydrated || status !== "playing" || revealingRef.current) return;
+      if (statsOpen || helpOpen) return;
       if (key === "enter") {
         submitGuess();
         return;
       }
       if (key === "backspace") {
-        setCurrentGuess((g) => {
-          const next = g.slice(0, -1);
-          persist({ currentGuess: next });
-          return next;
-        });
+        const next = currentGuessRef.current.slice(0, -1);
+        currentGuessRef.current = next;
+        setCurrentGuess(next);
+        persist({ currentGuess: next });
         return;
       }
-      if (/^[a-z]$/.test(key) && currentGuess.length < WORD_LENGTH) {
-        setCurrentGuess((g) => {
-          const next = g + key;
-          persist({ currentGuess: next });
-          return next;
-        });
+      if (/^[a-z]$/.test(key)) {
+        const g = currentGuessRef.current;
+        if (g.length >= WORD_LENGTH) return;
+        const next = g + key;
+        currentGuessRef.current = next;
+        setCurrentGuess(next);
+        persist({ currentGuess: next });
       }
     },
-    [hydrated, status, submitGuess, currentGuess.length, persist],
+    [hydrated, status, submitGuess, persist, statsOpen, helpOpen],
   );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (statsOpen || helpOpen) return;
       const target = e.target as HTMLElement | null;
       if (
         target &&
@@ -227,14 +261,18 @@ export function WordleGame() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onKey]);
+  }, [onKey, statsOpen, helpOpen]);
 
   const letterStates =
     hydrated && solution ? buildKeyboardStates(guesses, solution) : {};
 
   if (!hydrated) {
     return (
-      <div className="flex flex-1 items-center justify-center text-[var(--ink-muted)]">
+      <div
+        className="flex flex-1 items-center justify-center text-[var(--ink-muted)]"
+        role="status"
+        aria-live="polite"
+      >
         Loading today&apos;s puzzle…
       </div>
     );
@@ -242,21 +280,25 @@ export function WordleGame() {
 
   return (
     <div className="relative flex min-h-dvh flex-1 flex-col overflow-x-hidden">
+      <a href="#wordle-board" className="skip-link">
+        Skip to board
+      </a>
+
       <header className="flex items-center justify-between border-b border-[var(--panel-border)] px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:px-5 sm:py-2.5">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Link
             to="/"
-            className="rounded-md px-2 py-2 text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase hover:bg-[var(--key-bg)] hover:text-[var(--ink)]"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
           >
             Home
           </Link>
           <button
             type="button"
-            className="rounded-md p-2 text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)]"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
             onClick={() => setHelpOpen(true)}
             aria-label="How to play"
           >
-            <HelpCircle className="h-5 w-5" />
+            <HelpCircle className="h-5 w-5" aria-hidden />
           </button>
         </div>
 
@@ -272,18 +314,25 @@ export function WordleGame() {
 
         <button
           type="button"
-          className="rounded-md p-2 text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)]"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
           onClick={() => setStatsOpen(true)}
           aria-label="Statistics"
         >
-          <ChartNoAxesColumn className="h-5 w-5" />
+          <ChartNoAxesColumn className="h-5 w-5" aria-hidden />
         </button>
       </header>
 
       <Toast message={toast} />
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {statusAnn}
+      </div>
 
       <main className="flex min-h-0 flex-1 flex-col items-center justify-between gap-2 px-1 py-2 sm:gap-4 sm:px-2 sm:py-6">
-        <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-auto">
+        <div
+          id="wordle-board"
+          className="flex min-h-0 w-full flex-1 items-center justify-center overflow-x-hidden overflow-y-auto"
+          tabIndex={-1}
+        >
           <Board
             guesses={guesses}
             currentGuess={currentGuess}
@@ -307,7 +356,9 @@ export function WordleGame() {
         onOpenChange={setStatsOpen}
         stats={stats}
         status={status}
-        solution={status === "lost" ? solution : undefined}
+        solution={status !== "playing" ? solution : undefined}
+        guesses={guesses}
+        puzzleNumber={getPuzzleNumber(dateKey)}
       />
       <HowToPlayDialog open={helpOpen} onOpenChange={setHelpOpen} />
     </div>
