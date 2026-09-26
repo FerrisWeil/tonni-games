@@ -43,6 +43,10 @@ VITE_WORDLE_SOURCE=nyt pnpm dev
 
 Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `/api/wordle-nyt/{YYYY-MM-DD}` (Vite proxy in dev; Vercel serverless in prod). If the fetch fails, the game falls back to the local list and shows a toast.
 
+## Testing
+
+Vitest unit tests ship with the app (`pnpm test`). Full Playwright PR matrix follows ADR 0008 / the testing strategy plan — **not required to ship** playable Wordle (no nightly for now).
+
 ## Where the game lives
 
 | Path | Role |
@@ -60,4 +64,4 @@ Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `
 
 ## Deploy
 
-See `.github/workflows/deploy-vercel.yml`. Optional GitHub secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+See `.github/workflows/deploy-vercel.yml`. Optional GitHub secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Supports `workflow_dispatch` on `main`.

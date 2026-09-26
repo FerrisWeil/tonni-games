@@ -30,8 +30,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        # Main's lockfile was mid-repair; allow resolve until a complete lock lands.
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Test
         run: pnpm test
@@ -41,7 +40,7 @@ jobs:
 
   deploy:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -63,7 +62,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Install Vercel CLI
         run: pnpm add -g vercel@latest
@@ -76,16 +75,15 @@ jobs:
             echo "Skipping deploy: set VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID repository secrets."
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
+            case "$VERCEL_ORG_ID" in team_*) echo "org_id_shape=team_id" ;; *) echo "org_id_shape=other" ;; esac
+            case "$VERCEL_PROJECT_ID" in prj_*) echo "project_id_shape=prj_id" ;; *) echo "project_id_shape=other" ;; esac
           fi
 
-      - name: Pull Vercel environment
-        if: steps.secrets.outputs.configured == 'true'
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Build with Vercel
-        if: steps.secrets.outputs.configured == 'true'
-        run: vercel build --prod --token="$VERCEL_TOKEN"
-
+      # Prefer a single remote production deploy. Avoid vercel pull/prebuilt when
+      # Hobby build rate-limits or project link env is mismatched.
       - name: Deploy production
         if: steps.secrets.outputs.configured == 'true'
-        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        run: |
+          set -euo pipefail
+          vercel deploy --prod --yes --token="$VERCEL_TOKEN" \
+            --scope="$VERCEL_ORG_ID" 2>&1 | tee /tmp/vercel-deploy.log
