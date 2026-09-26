@@ -12,13 +12,14 @@ export function evaluateGuess(
 ): EvaluatedLetter[] {
   const g = guess.toLowerCase();
   const s = solution.toLowerCase();
-  const result: EvaluatedLetter[] = Array.from({ length: 5 }, (_, i) => ({
+  const n = s.length;
+  const result: EvaluatedLetter[] = Array.from({ length: n }, (_, i) => ({
     letter: g[i] ?? "",
     state: "absent" as LetterState,
   }));
 
   const remaining: Record<string, number> = {};
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < n; i++) {
     const ch = s[i];
     if (g[i] === ch) {
       result[i].state = "correct";
@@ -27,7 +28,7 @@ export function evaluateGuess(
     }
   }
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < n; i++) {
     if (result[i].state === "correct") continue;
     const ch = g[i];
     if ((remaining[ch] ?? 0) > 0) {

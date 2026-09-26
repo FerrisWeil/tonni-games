@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { evaluateGuess } from "@/lib/evaluate";
 import { tileAriaLabel } from "@/lib/letter-state";
 import { MAX_GUESSES, WORD_LENGTH, type LetterState } from "@/lib/types";
@@ -9,6 +10,10 @@ interface BoardProps {
   solution: string;
   revealingRow: number | null;
   shakeRow: boolean;
+  /** Defaults to daily Wordle (5). */
+  wordLength?: number;
+  /** Defaults to daily Wordle (6). */
+  maxGuesses?: number;
 }
 
 export function Board({
@@ -17,21 +22,29 @@ export function Board({
   solution,
   revealingRow,
   shakeRow,
+  wordLength = WORD_LENGTH,
+  maxGuesses = MAX_GUESSES,
 }: BoardProps) {
   return (
     <div
-      className="mx-auto w-full max-w-[min(100%,22rem)] px-1"
+      className="mx-auto w-full max-w-[min(100%,26rem)] px-1"
       role="group"
-      aria-label={`Guess board, ${guesses.length} of ${MAX_GUESSES} guesses used`}
+      aria-label={`Guess board, ${guesses.length} of ${maxGuesses} guesses used`}
+      style={
+        {
+          ["--tile-size" as string]: tileSizeForLength(wordLength),
+          ["--tile-font" as string]: tileFontForLength(wordLength),
+        } as CSSProperties
+      }
     >
       <div
         className="flex flex-col"
         style={{ gap: "var(--tile-gap)" }}
         role="grid"
-        aria-rowcount={MAX_GUESSES}
-        aria-colcount={WORD_LENGTH}
+        aria-rowcount={maxGuesses}
+        aria-colcount={wordLength}
       >
-        {Array.from({ length: MAX_GUESSES }, (_, row) => (
+        {Array.from({ length: maxGuesses }, (_, row) => (
           <div
             key={row}
             className="flex justify-center"
@@ -46,12 +59,25 @@ export function Board({
               solution,
               revealingRow,
               shakeRow,
+              wordLength,
             })}
           </div>
         ))}
       </div>
     </div>
   );
+}
+
+function tileSizeForLength(n: number): string {
+  if (n <= 5) return "clamp(2.65rem, 13.5vmin, 3.85rem)";
+  if (n <= 7) return "clamp(2.1rem, 11vmin, 3.1rem)";
+  return "clamp(1.7rem, 9vmin, 2.55rem)";
+}
+
+function tileFontForLength(n: number): string {
+  if (n <= 5) return "clamp(1.15rem, 5.5vmin, 1.85rem)";
+  if (n <= 7) return "clamp(0.95rem, 4.5vmin, 1.45rem)";
+  return "clamp(0.8rem, 3.8vmin, 1.2rem)";
 }
 
 function renderRow({
@@ -61,6 +87,7 @@ function renderRow({
   solution,
   revealingRow,
   shakeRow,
+  wordLength,
 }: {
   row: number;
   guesses: string[];
@@ -68,6 +95,7 @@ function renderRow({
   solution: string;
   revealingRow: number | null;
   shakeRow: boolean;
+  wordLength: number;
 }) {
   if (revealingRow === row && guesses[row]) {
     const evaluated = evaluateGuess(guesses[row], solution);
@@ -89,7 +117,7 @@ function renderRow({
   }
 
   if (row === guesses.length) {
-    const letters = currentGuess.padEnd(WORD_LENGTH).split("");
+    const letters = currentGuess.padEnd(wordLength).split("");
     return letters.map((ch, col) => {
       const letter = ch.trim();
       return (
@@ -104,7 +132,7 @@ function renderRow({
     });
   }
 
-  return Array.from({ length: WORD_LENGTH }, (_, col) => (
+  return Array.from({ length: wordLength }, (_, col) => (
     <Tile key={`${row}-${col}`} letter="" state="empty" />
   ));
 }

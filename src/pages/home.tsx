@@ -24,13 +24,20 @@ export function HomePage() {
       <p className="home-tagline mt-3 max-w-sm text-[var(--ink-muted)]">
         Free puzzle games for Tonni. No paywall, no play limits.
       </p>
-      <div className="home-cta mt-8 flex w-full max-w-xs flex-col gap-3 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center">
+      <div className="home-cta mt-6 flex w-full max-w-xs flex-col gap-2.5 sm:mt-8 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">
         <Link
           to="/wordle"
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--accent-brand)] px-6 py-3 text-sm font-bold tracking-wide text-white uppercase transition hover:brightness-110 active:scale-[0.98]"
           style={{ touchAction: "manipulation" }}
         >
           Play Wordle
+        </Link>
+        <Link
+          to="/wordle/builder"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border-2 border-[var(--accent-brand)] bg-transparent px-6 py-3 text-sm font-bold tracking-wide text-[var(--accent-brand)] uppercase transition hover:bg-[var(--accent-brand)]/10 active:scale-[0.98]"
+          style={{ touchAction: "manipulation" }}
+        >
+          Wordle Builder
         </Link>
         <Link
           to="/connections"
