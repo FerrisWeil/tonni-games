@@ -1,8 +1,12 @@
 import { Link } from "react-router-dom";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function HomePage() {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center px-6 py-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
+    <div className="relative mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center px-6 py-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
+      <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-2 sm:right-4">
+        <ThemeToggle />
+      </div>
       <h1 className="font-display text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
         Tonni Games
       </h1>
