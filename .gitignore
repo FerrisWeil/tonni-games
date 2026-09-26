@@ -41,6 +41,3 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
-
-.lock_content.json
-.lock_push_args.json
