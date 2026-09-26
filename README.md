@@ -17,6 +17,11 @@ pnpm dev
 
 Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
+| Route | What |
+| --- | --- |
+| `/` | Home — button to Wordle |
+| `/wordle` | Playable Wordle (direct URL) |
+
 ```bash
 pnpm test     # evaluation unit tests
 pnpm build    # production → dist/
@@ -27,12 +32,14 @@ pnpm preview  # serve production build
 
 | Path | Role |
 | --- | --- |
+| `src/pages/home.tsx` | Minimal home (`/`) |
+| `src/pages/wordle.tsx` | Wordle route (`/wordle`) |
 | `src/components/wordle/` | Board, keyboard, stats, how-to-play UI |
 | `src/lib/daily.ts` | Deterministic day → solution |
 | `src/lib/evaluate.ts` | Official-style tile colors (incl. doubles) |
 | `src/lib/storage.ts` | localStorage board + stats |
 | `src/data/` | Solutions + allowed guesses |
-| `src/App.tsx` | Mounts Wordle (single-game surface) |
+| `src/App.tsx` | React Router routes |
 
 ## Deploy
 
