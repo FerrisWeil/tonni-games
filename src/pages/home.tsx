@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export function HomePage() {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center px-6 text-center">
+    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center px-6 py-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
       <h1 className="font-display text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl">
         Tonni Games
       </h1>
@@ -11,7 +11,8 @@ export function HomePage() {
       </p>
       <Link
         to="/wordle"
-        className="mt-8 inline-flex items-center justify-center rounded-md bg-[var(--accent-brand)] px-6 py-3 text-sm font-bold tracking-wide text-white uppercase transition hover:brightness-110 active:scale-[0.98]"
+        className="mt-8 inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--accent-brand)] px-6 py-3 text-sm font-bold tracking-wide text-white uppercase transition hover:brightness-110 active:scale-[0.98]"
+        style={{ touchAction: "manipulation" }}
       >
         Play Wordle
       </Link>
