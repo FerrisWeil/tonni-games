@@ -1,17 +1,27 @@
-type ToastProps = {
+import { cn } from "@/lib/utils";
+
+interface ToastProps {
   message: string | null;
-};
+}
 
 export function Toast({ message }: ToastProps) {
-  if (!message) return null;
   return (
     <div
-      className="pointer-events-none absolute top-16 left-1/2 z-40 -translate-x-1/2 rounded-md bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--bg)] shadow-lg"
-      role="status"
-      aria-live="polite"
+      className="pointer-events-none absolute inset-x-0 top-16 z-40 flex min-h-10 justify-center"
+      aria-live="assertive"
       aria-atomic="true"
+      role="status"
     >
-      {message}
+      <div
+        className={cn(
+          "rounded-md bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-white shadow-lg transition-[opacity,transform] duration-150 ease-out will-change-transform",
+          message
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-1 opacity-0",
+        )}
+      >
+        {message ?? "\u00a0"}
+      </div>
     </div>
   );
 }
