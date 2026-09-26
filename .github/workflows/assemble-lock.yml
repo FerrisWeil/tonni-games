@@ -19,12 +19,12 @@ jobs:
           done
           wc -c pnpm-lock.yaml
           md5sum pnpm-lock.yaml
-          test "$(wc -c < pnpm-lock.yaml)" -eq 47635
-          test "$(md5sum pnpm-lock.yaml | awk '{print $1}')" = "8ca5451e5655ccb2c0a786e96d30c7bf"
+          test "$(wc -c < pnpm-lock.yaml)" -eq 46791
+          test "$(md5sum pnpm-lock.yaml | awk '{print $1}')" = "e653e38eef2d10073c8bfd5dd6c6c207"
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add pnpm-lock.yaml
-          git commit -m "chore: update pnpm-lock for @supabase/supabase-js"
+          git commit -m "fix: restore complete pnpm-lock.yaml for @supabase/supabase-js"
           git push origin HEAD:cursor/sign-in-supabase-e858
