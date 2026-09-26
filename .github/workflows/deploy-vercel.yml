@@ -43,8 +43,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # Public project identifiers (not secrets). Hardcoded so deploy does not
+      # depend on mis-set VERCEL_ORG_ID / VERCEL_PROJECT_ID repository secrets.
+      VERCEL_ORG_ID: team_xNSXW3QfytHiY0cKnRgj222W
+      VERCEL_PROJECT_ID: prj_xpylCQ0S9SSuj8DYmOsctzSp3emH
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - name: Checkout
@@ -67,15 +69,23 @@ jobs:
       - name: Install Vercel CLI
         run: pnpm add -g vercel@latest
 
-      - name: Check secrets
+      - name: Check token
         id: secrets
         run: |
-          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+          if [ -z "$VERCEL_TOKEN" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping deploy: set VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID repository secrets."
+            echo "Skipping deploy: set VERCEL_TOKEN repository secret."
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Link Vercel project
+        if: steps.secrets.outputs.configured == 'true'
+        run: |
+          mkdir -p .vercel
+          cat > .vercel/project.json <<EOF
+          {"orgId":"$VERCEL_ORG_ID","projectId":"$VERCEL_PROJECT_ID"}
+          EOF
 
       - name: Pull Vercel environment
         if: steps.secrets.outputs.configured == 'true'
