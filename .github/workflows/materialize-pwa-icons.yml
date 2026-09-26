@@ -1,0 +1,58 @@
+name: Materialize PWA icons
+
+on:
+  push:
+    branches: [cursor/pwa-home-screen-icons-67b9]
+    paths:
+      - "public/**/*.b64"
+      - ".github/workflows/materialize-pwa-icons.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-pwa-icons
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: cursor/pwa-home-screen-icons-67b9
+
+      - name: Decode base64 icons to PNG
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          files=(public/**/*.b64 public/*.b64)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No .b64 payloads; nothing to do"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            out="${f%.b64}"
+            mkdir -p "$(dirname "$out")"
+            base64 -d "$f" > "$out"
+            rm "$f"
+            echo "Wrote $out ($(wc -c < "$out") bytes)"
+            file "$out"
+          done
+          rm -f public/icons/_probe.png
+          rm -f .github/workflows/materialize-pwa-icons.yml
+
+      - name: Commit PNGs
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A public .github/workflows || true
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Materialize PWA PNG icons from base64 payloads"
+          git push origin HEAD:cursor/pwa-home-screen-icons-67b9
