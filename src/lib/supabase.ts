@@ -1,9 +1,12 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+/**
+ * Supabase is deferred until sign-in (ADR 0004). Stub keeps optional env wiring
+ * without requiring `@supabase/supabase-js` until that ADR is revisited.
+ */
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-/** True when real Supabase credentials are present. */
+/** True when real Supabase credentials are present (client still unused). */
 export const isSupabaseConfigured = Boolean(
   url &&
     anonKey &&
@@ -11,14 +14,8 @@ export const isSupabaseConfigured = Boolean(
     anonKey !== "your-anon-key",
 );
 
-/**
- * Browser Supabase client. When env vars are missing, returns null so Wordle
- * keeps working entirely on localStorage.
- */
-export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(url!, anonKey!)
-  : null;
+export const supabase = null;
 
-export function getSupabase(): SupabaseClient | null {
+export function getSupabase(): null {
   return supabase;
 }
