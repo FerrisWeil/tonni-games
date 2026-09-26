@@ -72,6 +72,13 @@ export function HomePage() {
           Play Connections
         </Link>
         <Link
+          to="/mastermind"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border-2 border-[var(--accent-brand)] bg-transparent px-6 py-3 text-sm font-bold tracking-wide text-[var(--accent-brand)] uppercase transition hover:bg-[var(--accent-brand)]/10 active:scale-[0.98]"
+          style={{ touchAction: "manipulation" }}
+        >
+          Play Mastermind
+        </Link>
+        <Link
           to="/themes"
           className="inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-6 py-3 text-sm font-semibold tracking-wide text-[var(--ink)] transition hover:border-[var(--ink-muted)] active:scale-[0.98]"
           style={{ touchAction: "manipulation" }}
