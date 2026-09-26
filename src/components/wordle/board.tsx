@@ -18,10 +18,14 @@ export function Board({
   shakeRow,
 }: BoardProps) {
   return (
-    <div className="mx-auto" aria-label="Guess board">
-      <div className="flex flex-col gap-1.5">
+    <div className="mx-auto w-full max-w-[min(100%,22rem)] px-1" aria-label="Guess board">
+      <div className="flex flex-col" style={{ gap: "var(--tile-gap)" }}>
         {Array.from({ length: MAX_GUESSES }, (_, row) => (
-          <div key={row} className="flex justify-center gap-1.5">
+          <div
+            key={row}
+            className="flex justify-center"
+            style={{ gap: "var(--tile-gap)" }}
+          >
             {renderRow({
               row,
               guesses,
@@ -103,7 +107,7 @@ function RevealingTile({
 }) {
   return (
     <div
-      className="relative flex h-14 w-14 items-center justify-center text-2xl font-bold uppercase select-none sm:h-16 sm:w-16 sm:text-3xl"
+      className="wordle-tile"
       style={{ ["--reveal-delay" as string]: `${index * 300}ms` }}
     >
       <div

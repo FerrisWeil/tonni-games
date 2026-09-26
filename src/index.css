@@ -19,12 +19,25 @@
   --tile-absent: #6b756e;
   --key-bg: #d0dbce;
   --bar-track: #d5e0d2;
+  /* Fluid tile size: fits ~5 tiles + gaps on 320px–desktop */
+  --tile-size: clamp(2.65rem, 13.5vmin, 3.85rem);
+  --tile-gap: clamp(0.25rem, 1.2vmin, 0.4rem);
+  --tile-font: clamp(1.15rem, 5.5vmin, 1.85rem);
+  --key-h: clamp(2.75rem, 12vmin, 3.5rem);
+}
+
+html {
+  /* Prevent iOS rubber-band sideways scroll */
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 html,
 body,
 #root {
   min-height: 100%;
+  min-height: 100dvh;
 }
 
 body {
@@ -37,15 +50,34 @@ body {
     radial-gradient(ellipse 70% 50% at 100% 100%, #d4e3d6 0%, transparent 50%),
     radial-gradient(ellipse 60% 40% at 0% 80%, #dde8da 0%, transparent 45%);
   background-attachment: fixed;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .font-display {
   font-family: var(--font-display);
 }
 
+/* Shared board tile shell — used by Tile + RevealingTile */
+.wordle-tile {
+  position: relative;
+  display: flex;
+  width: var(--tile-size);
+  height: var(--tile-size);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--tile-font);
+  font-weight: 700;
+  text-transform: uppercase;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .tile-face {
   transform-style: preserve-3d;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @keyframes tile-flip-correct {
@@ -177,4 +209,28 @@ body {
 }
 .animate-tile-shake {
   animation: tile-shake 500ms ease-in-out;
+}
+
+/* Short phones: tighten vertical rhythm so board + keyboard fit */
+@media (max-height: 700px) {
+  :root {
+    --tile-size: clamp(2.4rem, 11.5vmin, 3.25rem);
+    --tile-font: clamp(1.05rem, 4.8vmin, 1.5rem);
+    --key-h: clamp(2.5rem, 10.5vmin, 3rem);
+  }
+}
+
+@media (max-height: 600px) {
+  :root {
+    --tile-size: clamp(2.15rem, 10vmin, 2.85rem);
+    --tile-gap: 0.2rem;
+    --key-h: clamp(2.35rem, 9.5vmin, 2.75rem);
+  }
+}
+
+/* Touch keys: no 300ms delay / double-tap zoom side effects */
+.wordle-key {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
