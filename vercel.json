@@ -12,5 +12,5 @@
   "git": {
     "deploymentEnabled": false
   },
-  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in master|main) exit 1 ;; *) echo \"Skip non-master Git build (Hobby quota; ADR 0025)\"; exit 0 ;; esac"
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"master\" ]; then exit 1; else echo \"Skip non-master Git build (Hobby quota; ADR 0025/0027)\"; exit 0; fi"
 }

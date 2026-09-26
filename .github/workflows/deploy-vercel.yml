@@ -1,12 +1,12 @@
 name: Deploy to Vercel
 
-# ADR 0025: production promote only on push to master (or legacy main) / workflow_dispatch.
-# PRs still run build + Verify Vercel build (≠ deploy).
+# ADR 0025 / 0027: production promote only on push to master / workflow_dispatch.
+# PRs still run build + Verify Vercel build (≠ deploy). main is removed.
 on:
   push:
-    branches: [master, main]
+    branches: [master]
   pull_request:
-    branches: [master, main]
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
@@ -165,8 +165,7 @@ jobs:
     needs: [build, vercel-build]
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' &&
-       (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'))
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Vercel production deploy hook
@@ -174,9 +173,9 @@ jobs:
           DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
         run: |
           set -euo pipefail
-          # Prefer secret override; fallback is the project Deploy Hook (PR #8).
-          # After main→master rename, recreate the hook for branch master and set the secret.
-          HOOK="${DEPLOY_HOOK_URL:-https://api.vercel.com/v1/integrations/deploy/prj_xpylCQ0S9SSuj8DYmOsctzSp3emH/080bdhUrpY}"
+          # Prefer secret VERCEL_DEPLOY_HOOK_URL. Fallback is the master-branch Deploy Hook.
+          # Taylor: set the secret to this URL (or recreate under Vercel → Settings → Git → Deploy Hooks).
+          HOOK="${DEPLOY_HOOK_URL:-https://api.vercel.com/v1/integrations/deploy/prj_xpylCQ0S9SSuj8DYmOsctzSp3emH/UQtDlfYFbR}"
           echo "Triggering Vercel Deploy Hook for production (GHA verify ≠ this promote)…"
           echo "CLI vercel deploy is intentionally not used (broken VERCEL_TOKEN scope)."
           http_code=$(curl -sS -o /tmp/hook-resp.json -w "%{http_code}" -X POST "$HOOK")
