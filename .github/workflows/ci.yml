@@ -23,6 +23,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Assemble pnpm-lock.yaml
+        run: node scripts/assemble-pnpm-lock.mjs
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm build
@@ -43,6 +45,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Assemble pnpm-lock.yaml
+        run: node scripts/assemble-pnpm-lock.mjs
       - run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps ${{ matrix.project == 'webkit-phone-md' && 'webkit' || 'chromium' }}
