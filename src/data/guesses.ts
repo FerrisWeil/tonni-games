@@ -25,10 +25,31 @@ import { GUESSES_23 } from "./guesses-23";
 import { GUESSES_24 } from "./guesses-24";
 import { GUESSES_25 } from "./guesses-25";
 
-export const GUESSES = [
-  ...GUESSES_0, ...GUESSES_1, ...GUESSES_2, ...GUESSES_3, ...GUESSES_4, ...GUESSES_5,
-  ...GUESSES_6, ...GUESSES_7, ...GUESSES_8, ...GUESSES_9, ...GUESSES_10, ...GUESSES_11,
-  ...GUESSES_12, ...GUESSES_13, ...GUESSES_14, ...GUESSES_15, ...GUESSES_16, ...GUESSES_17,
-  ...GUESSES_18, ...GUESSES_19, ...GUESSES_20, ...GUESSES_21, ...GUESSES_22, ...GUESSES_23,
-  ...GUESSES_24, ...GUESSES_25,
-] as const;
+export const GUESSES: readonly string[] = [
+  ...GUESSES_0,
+  ...GUESSES_1,
+  ...GUESSES_2,
+  ...GUESSES_3,
+  ...GUESSES_4,
+  ...GUESSES_5,
+  ...GUESSES_6,
+  ...GUESSES_7,
+  ...GUESSES_8,
+  ...GUESSES_9,
+  ...GUESSES_10,
+  ...GUESSES_11,
+  ...GUESSES_12,
+  ...GUESSES_13,
+  ...GUESSES_14,
+  ...GUESSES_15,
+  ...GUESSES_16,
+  ...GUESSES_17,
+  ...GUESSES_18,
+  ...GUESSES_19,
+  ...GUESSES_20,
+  ...GUESSES_21,
+  ...GUESSES_22,
+  ...GUESSES_23,
+  ...GUESSES_24,
+  ...GUESSES_25,
+];
