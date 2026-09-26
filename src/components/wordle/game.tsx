@@ -198,8 +198,8 @@ export function WordleGame() {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-[var(--panel-border)] px-3 py-2.5 sm:px-5">
+    <div className="relative flex min-h-dvh flex-1 flex-col overflow-x-hidden">
+      <header className="flex items-center justify-between border-b border-[var(--panel-border)] px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:px-5 sm:py-2.5">
         <div className="flex items-center gap-1">
           <Link
             to="/"
@@ -238,8 +238,8 @@ export function WordleGame() {
 
       <Toast message={toast} />
 
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-between gap-4 px-2 py-4 sm:py-6">
-        <div className="flex flex-1 items-center">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-between gap-2 px-1 py-2 sm:gap-4 sm:px-2 sm:py-6">
+        <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-auto">
           <Board
             guesses={guesses}
             currentGuess={currentGuess}
@@ -249,7 +249,7 @@ export function WordleGame() {
           />
         </div>
 
-        <div className="w-full pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="w-full shrink-0 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
           <Keyboard
             letterStates={letterStates}
             onKey={onKey}

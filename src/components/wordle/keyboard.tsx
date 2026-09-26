@@ -22,9 +22,12 @@ interface KeyboardProps {
 
 export function Keyboard({ letterStates, onKey, disabled }: KeyboardProps) {
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-1.5 px-1" aria-label="Keyboard">
+    <div
+      className="mx-auto flex w-full max-w-lg flex-col gap-1.5 px-1 sm:gap-1.5"
+      aria-label="Keyboard"
+    >
       {ROWS.map((row, i) => (
-        <div key={i} className="flex justify-center gap-1.5">
+        <div key={i} className="flex w-full justify-center gap-1 sm:gap-1.5">
           {row.map((key) => {
             const isWide = key === "enter" || key === "backspace";
             const state = letterStates[key];
@@ -34,19 +37,26 @@ export function Keyboard({ letterStates, onKey, disabled }: KeyboardProps) {
                 type="button"
                 disabled={disabled}
                 onClick={() => onKey(key)}
+                onPointerDown={(e) => {
+                  // Avoid sticky hover / ghost clicks on touch
+                  if (e.pointerType === "touch") e.currentTarget.focus({ preventScroll: true });
+                }}
                 className={cn(
-                  "flex h-14 items-center justify-center rounded-md text-sm font-bold uppercase transition-colors active:scale-95 disabled:opacity-60",
-                  isWide ? "min-w-[3.25rem] flex-[1.4] px-2 text-xs" : "min-w-8 flex-1",
+                  "wordle-key flex items-center justify-center rounded-md text-sm font-bold uppercase transition-colors active:scale-95 disabled:opacity-60",
+                  isWide
+                    ? "min-w-[2.75rem] flex-[1.55] px-1 text-[0.65rem] sm:min-w-[3.25rem] sm:px-2 sm:text-xs"
+                    : "min-w-0 flex-1 text-xs sm:text-sm",
                   state && keyStateClass[state]
                     ? keyStateClass[state]
                     : "bg-[var(--key-bg)] text-[var(--ink)]",
                 )}
+                style={{ height: "var(--key-h)", minHeight: "44px" }}
                 aria-label={
                   key === "backspace" ? "Backspace" : key === "enter" ? "Enter" : key
                 }
               >
                 {key === "backspace" ? (
-                  <Delete className="h-5 w-5" aria-hidden />
+                  <Delete className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
                 ) : (
                   key
                 )}
