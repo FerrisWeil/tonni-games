@@ -116,9 +116,18 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 
 ## Deploy
 
-Workflow: `.github/workflows/deploy-vercel.yml` (ADR 0025).
+Default branch: **`master`**. Two Vercel projects share this repo:
 
-Production default branch: **`master`**. Production project: **`tonni-games`**. On-demand / exploratory deploys use **`tonni-games-dev`** (separate Vercel project) — not this production path.
+| Project (human) | Platform name | Project id | Purpose |
+| --- | --- | --- | --- |
+| **tonni-games** (prod) | `tonni-games` | `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH` | Live site — thrifty (ADR 0025) |
+| **Tonni-games-dev** | `tonni-games-dev` (Vercel requires lowercase names) | `prj_RJRUctklGEubeVOWxSOUhdfWa4tO` | On-demand / dev only (ADR 0026) |
+
+Team: `ferrisweils-projects` (`team_xNSXW3QfytHiY0cKnRgj222W`).
+
+Both use the **same Supabase backend/login** for now (`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`).
+
+### Production — `.github/workflows/deploy-vercel.yml` (ADR 0025)
 
 | Job | When | What |
 | --- | --- |
@@ -126,7 +135,7 @@ Production default branch: **`master`**. Production project: **`tonni-games`**. 
 | **Verify Vercel build** (`vercel-build`) | PRs + `master` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
 | **Deploy production (hook)** | `push` to `master` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). **Never** on `pull_request`. |
 
-### Manual deploy (Taylor)
+#### Manual prod deploy (Taylor)
 
 1. Open [Actions → Deploy to Vercel](https://github.com/FerrisWeil/tonni-games/actions/workflows/deploy-vercel.yml).
 2. Click **Run workflow**.
@@ -137,13 +146,35 @@ Merging a PR into **`master`** also runs the Deploy Hook once (same as above). P
 
 After the `main` → `master` rename: recreate the Deploy Hook for branch **`master`** under Vercel → Project → Settings → Git → Deploy Hooks, then set repo secret `VERCEL_DEPLOY_HOOK_URL` to the new URL.
 
+### Deploy to Dev — `.github/workflows/deploy-dev.yml` (ADR 0026)
+
+On-demand only (`workflow_dispatch`). Does **not** run on push or PR. Targets **Tonni-games-dev** only.
+
+1. Open [Actions → Deploy to Dev](https://github.com/FerrisWeil/tonni-games/actions/workflows/deploy-dev.yml).
+2. Click **Run workflow** (branch: usually **`master`**).
+3. Optional input `ref` to deploy another git ref.
+4. After READY: [https://tonni-games-dev.vercel.app](https://tonni-games-dev.vercel.app) · [Vercel dashboard](https://vercel.com/ferrisweils-projects/tonni-games-dev)
+
+Requires secret **`VERCEL_DEV_DEPLOY_HOOK_URL`**. Create the hook: Vercel → **Tonni-games-dev** → Settings → Git → Deploy Hooks → name `on-demand-dev`, branch **`master`**. Automatic Git builds on Tonni-games-dev are skipped via the project Ignored Build Step.
+
 ### Secrets
 
 | Secret | Required? | Notes |
 | --- | --- |
-| `VERCEL_DEPLOY_HOOK_URL` | Optional | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated (required after `master` rename if the old hook targeted `main`). |
+| `VERCEL_DEPLOY_HOOK_URL` | Optional (prod) | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated (required after `master` rename if the old hook targeted `main`). |
+| `VERCEL_DEV_DEPLOY_HOOK_URL` | **Required for Deploy to Dev** | Deploy Hook on **Tonni-games-dev** (`tonni-games-dev`) for branch **`master`**. |
+| `VERCEL_DEV_PROJECT_ID` | Optional (docs / future CLI) | `prj_RJRUctklGEubeVOWxSOUhdfWa4tO` |
 | `VERCEL_TOKEN` | **Not used by current GHA** | Past tokens authenticate but **404 / cannot read project settings** for `tonni-games` (`vercel pull` → “Could not retrieve Project Settings”). Do **not** rely on CLI deploy until rotated. |
-| `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Optional (CLI only) | Team `team_xNSXW3QfytHiY0cKnRgj222W` (`ferrisweils-projects`), project `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`. |
+| `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Optional (CLI only) | Team `team_xNSXW3QfytHiY0cKnRgj222W` (`ferrisweils-projects`), prod project `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`. |
+
+### Env on Vercel (both projects)
+
+| Variable | Notes |
+| --- | --- |
+| `VITE_SUPABASE_URL` | `https://vycergkxkrpsbxoglrws.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Same anon key on prod and Tonni-games-dev (Supabase → Project Settings → API). |
+
+If a project is missing these, paste from Supabase or copy from the other Vercel project’s Environment Variables.
 
 To restore CLI `vercel pull` + `vercel build` verification later: create a Vercel token that can **read** team **ferrisweils-projects** / project **tonni-games** (account-level token owned by a member of that team, or a token scoped to that project), set `VERCEL_TOKEN` (+ org/project IDs), then switch the verify job to `vercel pull --yes --environment=preview` + `vercel build`. Until then, the local parity job is the merge gate; production promote stays on the Deploy Hook.
 
@@ -151,13 +182,14 @@ To restore CLI `vercel pull` + `vercel build` verification later: create a Verce
 
 Vercel Hobby caps daily deployments. Preview builds on every PR commit burned that quota and left a red **Vercel** Git status (`Deployment rate limited`) even when GHA **Verify Vercel build** was green.
 
-**Mitigation (in repo + project) — ADR 0025:**
+**Mitigation (in repo + project) — ADR 0025 / 0026:**
 
-- Preview deployments are **disabled** on production (`previewDeploymentsDisabled`).
+- Preview deployments are **disabled** on both projects (`previewDeploymentsDisabled`).
 - `vercel.json` `git.deploymentEnabled: false` — no automatic Git deploys (PRs/forks/`master` pushes do not create Vercel builds by themselves).
 - `ignoreCommand` still skips non-`master` if Git deploys are re-enabled (Deploy Hooks for `master` still build).
+- Tonni-games-dev Ignored Build Step always skips automatic Git builds (hook / **Deploy to Dev** only).
 - Production promote is **Deploy Hook only** from GHA on `master` / `workflow_dispatch` (never `vercel` CLI — `VERCEL_TOKEN` still cannot read this project).
-- Use **`tonni-games-dev`** for on-demand deploys so production stays thrifty.
+- Use **Tonni-games-dev** + **Deploy to Dev** for on-demand deploys so production stays thrifty.
 
 Merge gate = GHA `build` + **Verify Vercel build**. Do not treat the Vercel Git status as the merge gate while on Hobby.
 
