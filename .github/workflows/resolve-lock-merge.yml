@@ -30,11 +30,15 @@ jobs:
           test "$(wc -c < pnpm-lock.yaml)" -eq 45044
           test "$(md5sum pnpm-lock.yaml | awk '{print $1}')" = "a6b5669e78443987cd9e7155056d3c7f"
           git add pnpm-lock.yaml
-          git diff --cached --name-only | grep '^\.github/workflows/' | xargs -r git reset HEAD --
-          git checkout HEAD -- .github/workflows/ 2>/dev/null || true
-          if git rev-parse -q --verify MERGE_HEAD >/dev/null; then
-            git commit --no-edit -m "Merge main; keep full pnpm-lock.yaml (45044)" || git commit -m "Merge main; keep full pnpm-lock.yaml (45044)"
+          # Avoid pipefail failure when no workflow files are staged
+          mapfile -t WF < <(git diff --cached --name-only | grep '^\.github/workflows/' || true)
+          if [ "${#WF[@]}" -gt 0 ]; then
+            git reset HEAD -- "${WF[@]}"
+            git checkout HEAD -- "${WF[@]}" || true
+          fi
+          if git diff --cached --quiet; then
+            echo "No lockfile changes to commit after merge"
           else
-            git commit -m "Merge main; keep full pnpm-lock.yaml (45044)" || echo nothing
+            git commit -m "Keep full pnpm-lock.yaml (45044) after merging main"
           fi
           git push origin "HEAD:$BRANCH"
