@@ -23,20 +23,18 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           BRANCH="${{ inputs.target_branch }}"
           git fetch origin main
-          git merge origin/main --no-edit || true
+          git merge origin/main -X ours --no-edit || true
           if [ -d lock-parts ]; then
             cat $(ls lock-parts/*.part | sort) > pnpm-lock.yaml
           fi
           test "$(wc -c < pnpm-lock.yaml)" -eq 45044
           test "$(md5sum pnpm-lock.yaml | awk '{print $1}')" = "a6b5669e78443987cd9e7155056d3c7f"
-          git add -A
-          if git diff --cached --quiet && ! git rev-parse -q --verify MERGE_HEAD >/dev/null; then
-            echo "Nothing to commit"
-            exit 0
-          fi
+          git add pnpm-lock.yaml
+          git diff --cached --name-only | grep '^\.github/workflows/' | xargs -r git reset HEAD --
+          git checkout HEAD -- .github/workflows/ 2>/dev/null || true
           if git rev-parse -q --verify MERGE_HEAD >/dev/null; then
             git commit --no-edit -m "Merge main; keep full pnpm-lock.yaml (45044)" || git commit -m "Merge main; keep full pnpm-lock.yaml (45044)"
           else
-            git commit -m "Merge main; keep full pnpm-lock.yaml (45044)"
+            git commit -m "Merge main; keep full pnpm-lock.yaml (45044)" || echo nothing
           fi
           git push origin "HEAD:$BRANCH"
