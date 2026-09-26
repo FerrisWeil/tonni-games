@@ -38,9 +38,9 @@ jobs:
       - name: Build
         run: pnpm build
 
-  # Gates PRs without thrashing production. Does not call vercel pull/build —
-  # VERCEL_TOKEN authenticates but cannot read this project (404 / Project Settings).
-  # See README Deploy section for required token scopes if restoring CLI verification.
+  # Real merge gate (ADR 0019). Local parity with Vercel settings — no vercel CLI.
+  # Vercel Git preview checks are NOT the gate: Hobby accounts hit build rate limits
+  # and redact as a failing "Vercel" status. Preview deploys are disabled on the project.
   vercel-build:
     name: Verify Vercel build
     runs-on: ubuntu-latest
@@ -99,11 +99,6 @@ jobs:
             console.error("vercel.json rewrites must SPA-fallback non-api routes to /index.html");
             process.exit(1);
           }
-          if (cfg.ignoreCommand && typeof cfg.ignoreCommand === "string") {
-            console.log("ignoreCommand present (non-main skips):", cfg.ignoreCommand);
-          } else {
-            console.warn("WARN: no ignoreCommand — PR Git builds may burn Hobby deploy quota");
-          }
           console.log("vercel.json OK:", JSON.stringify(cfg, null, 2));
           NODE
 
@@ -132,27 +127,23 @@ jobs:
             grep -q "export default" "$f"
             echo "OK $f"
           done
-          # Catch syntax/type errors in API handlers (same files Vercel compiles).
           pnpm exec tsc --ignoreConfig --pretty false --strict --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck --noEmit \
             "api/wordle-nyt/[date].ts" \
             "api/connections-nyt/[date].ts"
           echo "API routes typecheck OK"
 
-      - name: Note on VERCEL_TOKEN / vercel CLI
+      - name: Gate note
         run: |
           cat <<'EOF'
-          ::notice title=Verify Vercel build::Local parity check only (vercel.json + pnpm build + api/*.ts).
-          Full `vercel pull` / `vercel build` is not run here: the repo VERCEL_TOKEN
-          authenticates but returns 404 / cannot read project settings for tonni-games.
-          Production promote uses the Deploy Hook only (see deploy job) — never CLI.
-          Preview Git deploys are disabled / ignored on non-main to protect Hobby quota.
-          To enable CLI verification later, rotate VERCEL_TOKEN for team
-          ferrisweils-projects / project tonni-games (Full Account or the project).
+          ::notice title=Verify Vercel build::This job is the merge gate (ADR 0019).
+          Ignore a red GitHub "Vercel" status from the Vercel Git app when it links to
+          upgradeToPro=build-rate-limit — Hobby preview builds are disabled; production
+          promote uses the Deploy Hook below. Do not restore `vercel pull`/`vercel deploy`
+          CLI here unless VERCEL_TOKEN is rotated to a token that can read project
+          tonni-games (past tokens return User not found / Project Settings 404).
           EOF
 
-  # Production promote only — not on PRs.
-  # Do NOT use vercel CLI here: repo VERCEL_TOKEN authenticates but returns
-  # "User not found" / cannot read project settings (404). Hook-only path.
+  # Hook-only production promote. Broken VERCEL_TOKEN CLI path intentionally removed.
   deploy:
     name: Deploy production (hook)
     needs: [build, vercel-build]
@@ -164,28 +155,25 @@ jobs:
           DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
         run: |
           set -euo pipefail
-          # Prefer secret override; fallback is the project Deploy Hook for main (PR #8).
           HOOK="${DEPLOY_HOOK_URL:-https://api.vercel.com/v1/integrations/deploy/prj_xpylCQ0S9SSuj8DYmOsctzSp3emH/080bdhUrpY}"
-          echo "Triggering Vercel Deploy Hook for main (GHA verify ≠ this promote)…"
-          echo "CLI vercel deploy is intentionally not used (broken VERCEL_TOKEN scope)."
-          http_code=$(curl -sS -o /tmp/hook-resp.json -w "%{http_code}" -X POST "$HOOK")
-          resp=$(cat /tmp/hook-resp.json)
+          echo "Triggering Vercel Deploy Hook for production (main)…"
+          http_code=$(curl -sS -o /tmp/hook-resp.json -w "%{http_code}" -X POST "$HOOK" || true)
           echo "HTTP $http_code"
-          echo "$resp"
-          if echo "$resp" | grep -qiE 'rate.?limit|upgradeToPro|api-deployments-free'; then
-            echo "::error::Vercel Hobby deploy rate limit hit. Wait ~24h or upgrade. Preview deploys are disabled; only main/hook should consume quota."
+          cat /tmp/hook-resp.json || true
+          echo
+          if [ "$http_code" != "200" ] && [ "$http_code" != "201" ]; then
+            echo "::error::Deploy Hook failed (HTTP $http_code). Check VERCEL_DEPLOY_HOOK_URL, or Hobby api-deployments-free-per-day rate limit."
             exit 1
           fi
-          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "::error::Deploy Hook HTTP $http_code. Check VERCEL_DEPLOY_HOOK_URL secret or recreate the hook in Vercel → Project → Settings → Git → Deploy Hooks."
+          if ! grep -q '"job"' /tmp/hook-resp.json; then
+            echo "::error::Deploy Hook response missing job payload. Rotate the hook in Vercel → Project → Settings → Git → Deploy Hooks."
             exit 1
           fi
-          echo "$resp" | grep -q '"job"' || {
-            echo "::error::Deploy Hook response missing job payload. Rotate VERCEL_DEPLOY_HOOK_URL or recreate the hook."
+          state=$(node -pe 'JSON.parse(require("fs").readFileSync("/tmp/hook-resp.json","utf8")).job?.state || ""')
+          id=$(node -pe 'JSON.parse(require("fs").readFileSync("/tmp/hook-resp.json","utf8")).job?.id || ""')
+          echo "Deploy Hook accepted job id=$id state=$state"
+          if [ "$state" = "ERROR" ] || [ "$state" = "CANCELED" ]; then
+            echo "::error::Deploy Hook job state is $state. Likely Hobby build rate limit — wait for reset or upgrade. Production promote did not start."
             exit 1
-          }
-          echo "$resp" | grep -q '"state"' || {
-            echo "::error::Deploy Hook response missing job state."
-            exit 1
-          }
-          echo "::notice::Deploy Hook accepted. Production build runs on Vercel (not in this GHA job)."
+          fi
+          echo "::notice::Hook queued production build ($id). Watch https://vercel.com/ferrisweils-projects/tonni-games"

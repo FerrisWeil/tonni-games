@@ -19,11 +19,11 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 | Route | What |
 | --- | --- |
-| `/` | Home — Wordle, Builder, Connections, Themes |
+| `/` | Home — Wordle + Connections + Themes |
 | `/themes` | Built-in theme picker (persists) |
-| `/wordle` | Daily Wordle |
-| `/wordle/builder` | Create a custom Wordle + share link |
-| `/w/:code` | Play a custom Wordle from an encoded share code |
+| `/wordle` | Playable Wordle |
+| `/wordle/builder` | Custom Wordle builder (shareable codes) |
+| `/w/:code` | Play a shared custom Wordle |
 | `/connections` | Playable Connections |
 
 ```bash
@@ -51,10 +51,6 @@ NYT uses same-origin `/api/connections-nyt/{YYYY-MM-DD}` (Vite proxy in dev; Ver
 
 Add more custom packs by appending to `CONNECTION_PACKS` in `src/lib/connections/packs.ts`.
 
-## Wordle Builder
-
-Create a custom solution at `/wordle/builder` (3–10 letters, A–Z). The app encodes **version + length + obfuscated letters + checksum** as a base64url code and shares `/w/:code`. No database — anyone with the link can play. Length 5 guesses use the daily dictionary; other lengths accept any A–Z guess of the correct length. Guess budget: 6 (≤5 letters), 7 (6–7), or 8 (8–10).
-
 ## Wordle — personal NYT spike
 
 Default puzzle source is the **local Tonni list**. For personal/family testing:
@@ -65,6 +61,10 @@ VITE_WORDLE_SOURCE=nyt pnpm dev
 ```
 
 Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `/api/wordle-nyt/{YYYY-MM-DD}` (Vite proxy in dev; Vercel serverless in prod). If the fetch fails, the game falls back to the local list and shows a toast.
+
+## Wordle Builder
+
+Create a custom puzzle at `/wordle/builder` (3–10 letter solutions). Share the encoded `/w/:code` link — no database; the solution is in the URL.
 
 ## Themes
 
@@ -97,10 +97,13 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 | `src/pages/home.tsx` | Home (`/`) |
 | `src/pages/themes.tsx` | Theme picker (`/themes`) |
 | `src/pages/wordle.tsx` | Wordle (`/wordle`) |
+| `src/pages/wordle-builder.tsx` | Wordle Builder (`/wordle/builder`) |
+| `src/pages/wordle-custom-play.tsx` | Custom play (`/w/:code`) |
 | `src/pages/connections.tsx` | Connections (`/connections`) |
 | `src/components/wordle/` | Wordle UI |
 | `src/components/connections/` | Connections UI |
 | `src/lib/connections/` | Logic, NYT parse, packs loader, share |
+| `src/lib/wordle-builder.ts` | Encode/decode share codes |
 | `src/data/connections/` | Tonni-authored puzzle packs |
 | `api/connections-nyt/[date].ts` | Vercel proxy for NYT Connections |
 | `api/wordle-nyt/[date].ts` | Vercel proxy for NYT Wordle |
@@ -121,29 +124,23 @@ Workflow: `.github/workflows/deploy-vercel.yml`.
 | Job | When | What |
 | --- | --- |
 | `build` | PRs + `main` | `pnpm test` + `pnpm build` |
-| **Verify Vercel build** (`vercel-build`) | PRs + `main` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
-| **Deploy production (hook)** | `push` to `main` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). Skipped on PRs. |
+| **Verify Vercel build** (`vercel-build`) | PRs + `main` | **Merge gate** (ADR 0019): validates `vercel.json`, runs the same install/build as Vercel, asserts `dist/`, typechecks `api/**`. No `vercel` CLI. |
+| **Deploy production (hook)** | `push` to `main` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** only. Skipped on PRs. Broken CLI token path removed. |
+
+### Trust these checks
+
+- **Trust:** GHA `build` + **Verify Vercel build**.
+- **Ignore:** a red GitHub **Vercel** status that links to `upgradeToPro=build-rate-limit`. Hobby free-tier burn from agent preview pushes is stopped by **disabling Preview Deployments** on the Vercel project; production still builds on `main` via Git + Deploy Hook.
+- Manual promote: Actions → **Deploy to Vercel** → **Run workflow**, or POST the Deploy Hook.
 
 ### Secrets
 
 | Secret | Required? | Notes |
 | --- | --- |
-| `VERCEL_DEPLOY_HOOK_URL` | Optional | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated. |
-| `VERCEL_TOKEN` | **Not used by current GHA** | Past tokens authenticate but **404 / cannot read project settings** for `tonni-games` (`vercel pull` → “Could not retrieve Project Settings”). Do **not** rely on CLI deploy until rotated. |
-| `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Optional (CLI only) | Team `team_xNSXW3QfytHiY0cKnRgj222W` (`ferrisweils-projects`), project `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`. |
+| `VERCEL_DEPLOY_HOOK_URL` | Optional | Overrides the hardcoded production Deploy Hook (`prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`). Set if the hook is rotated. |
+| `VERCEL_TOKEN` | **Not used** | Do not restore CLI `vercel pull` / `vercel deploy` until a token can read team `ferrisweils-projects` / project `tonni-games`. Past repo tokens returned `User not found (404)` / Project Settings errors. |
+| `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Unused | Kept only for docs: `team_xNSXW3QfytHiY0cKnRgj222W` / `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`. |
 
-To restore CLI `vercel pull` + `vercel build` verification later: create a Vercel token that can **read** team **ferrisweils-projects** / project **tonni-games** (account-level token owned by a member of that team, or a token scoped to that project), set `VERCEL_TOKEN` (+ org/project IDs), then switch the verify job to `vercel pull --yes --environment=preview` + `vercel build`. Until then, the local parity job is the merge gate; production promote stays on the Deploy Hook.
+### Hobby rate limits
 
-### Hobby rate limits / previews
-
-Vercel Hobby caps daily deployments. Preview builds on every PR commit burned that quota and left a red **Vercel** Git status (`Deployment rate limited`) even when GHA **Verify Vercel build** was green.
-
-**Mitigation (in repo + project):**
-
-- Preview deployments are **disabled** on the Vercel project (`previewDeploymentsDisabled`).
-- `vercel.json` `ignoreCommand` skips non-`main` Git builds so PR branches do not consume quota.
-- Production promote is **Deploy Hook only** from GHA on `main` / `workflow_dispatch` (never `vercel` CLI — `VERCEL_TOKEN` still cannot read this project).
-
-Merge gate = GHA `build` + **Verify Vercel build**. Do not treat the Vercel Git status as the merge gate while on Hobby.
-
-Avoid thrashing Vercel Hobby daily deploy quota (prefer Deploy Hook + disabled previews over CLI/`vercel deploy`).
+Vercel Hobby caps deployments (~100/day). If the Deploy Hook returns a job that never leaves `PENDING`, or GitHub shows build-rate-limit, wait for the daily reset (or upgrade). GHA will fail the deploy job with a clear message when the hook HTTP response is non-2xx or `state` is `ERROR`.
