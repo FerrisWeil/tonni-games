@@ -1,1 +1,61 @@
-PLACEHOLDER_LOAD_FROM_/tmp/pnpm-lock-exact.yaml
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^1.48.0
+        version: 1.48.0(react@19.2.8)
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
+      react-router-dom:
+        specifier: ^7.18.4
+        version: 7.18.4(react-dom@19.2.8)(react@19.2.8)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.3(vite@8.3.0)
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.10.1
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: ^6.1.1
+        version: 6.1.1(vite@8.3.0)
+      oxlint:
+        specifier: ^1.81.0
+        version: 1.51.0
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.2
+      vite:
+        specifier: ^8.3.0
+        version: 8.3.0(@types/node@24.10.1)
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@24.10.1)
+
+packages:
+
+  '@babel/code-frame@7.29.0':
+    resolution: {integrity: sha512-GJh0mock8c9Qh+zqYYs2ZVt5g9x8O4zq2Qz9q3X4Q1h3mY5u7Y8b5X3z2oqX2X2X3X3X3X3X3X3X3X3X3}
