@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { HelpCircle, Share2 } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Toast } from "@/components/wordle/toast";
 import { Modal } from "@/components/ui/modal";
@@ -316,9 +317,17 @@ export function ConnectionsGame() {
 
   if (!hydrated || !puzzle) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-[var(--ink-muted)]">
-        Loading puzzle…
-      </div>
+      <AppShell
+        headerClassName="flex items-center justify-center px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
+        header={
+          <h1 className="font-display text-xl font-semibold tracking-tight text-[var(--ink)]">
+            Connections
+          </h1>
+        }
+        bodyClassName="flex items-center justify-center"
+      >
+        <div className="text-[var(--ink-muted)]">Loading puzzle…</div>
+      </AppShell>
     );
   }
 
@@ -326,202 +335,207 @@ export function ConnectionsGame() {
   const tonniList = listTonniPuzzles();
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.25rem,env(safe-area-inset-top))]">
+    <>
       <a
         href="#connections-board"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded focus:bg-[var(--panel)] focus:px-3 focus:py-2"
       >
         Skip to board
       </a>
-
-      <header className="relative flex items-center justify-between gap-2 border-b border-[var(--panel-border)] py-2">
-        <Link
-          to="/"
-          className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]"
-        >
-          Home
-        </Link>
-        <h1 className="font-display absolute left-1/2 -translate-x-1/2 text-xl font-semibold tracking-tight text-[var(--ink)] sm:text-2xl">
-          Connections
-        </h1>
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
-            aria-label="How to play"
-            onClick={() => setHelpOpen(true)}
-          >
-            <HelpCircle className="h-5 w-5" aria-hidden />
-          </button>
-          <ThemeToggle />
-        </div>
-      </header>
-
-      <div className="mt-3 flex flex-wrap items-end gap-2 text-sm">
-        <label className="flex flex-col gap-1 text-[var(--ink-muted)]">
-          Source
-          <select
-            className="min-h-11 rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-3 text-[var(--ink)]"
-            value={sourceLabel}
-            onChange={(e) => setSource(e.target.value as ConnectionsSource)}
-            aria-label="Puzzle source"
-          >
-            <option value="tonni">Tonni (custom)</option>
-            <option value="nyt">NYT (personal use)</option>
-          </select>
-        </label>
-        {sourceLabel === "tonni" ? (
-          <label className="flex flex-col gap-1 text-[var(--ink-muted)]">
-            Pack puzzle
-            <select
-              className="min-h-11 max-w-[12rem] rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-3 text-[var(--ink)]"
-              value={puzzle.id}
-              onChange={(e) => setTonniPuzzle(e.target.value)}
-              aria-label="Tonni puzzle"
+      <AppShell
+        headerClassName="relative flex items-center justify-between gap-2 px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
+        bodyClassName="px-3 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
+        header={
+          <>
+            <Link
+              to="/"
+              className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]"
             >
-              {tonniList.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title}
-                </option>
-              ))}
+              Home
+            </Link>
+            <h1 className="font-display absolute left-1/2 -translate-x-1/2 text-xl font-semibold tracking-tight text-[var(--ink)] sm:text-2xl">
+              Connections
+            </h1>
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
+                aria-label="How to play"
+                onClick={() => setHelpOpen(true)}
+              >
+                <HelpCircle className="h-5 w-5" aria-hidden />
+              </button>
+              <ThemeToggle />
+            </div>
+          </>
+        }
+      >
+        <div className="flex flex-wrap items-end gap-2 text-sm">
+          <label className="flex flex-col gap-1 text-[var(--ink-muted)]">
+            Source
+            <select
+              className="min-h-11 rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-3 text-[var(--ink)]"
+              value={sourceLabel}
+              onChange={(e) => setSource(e.target.value as ConnectionsSource)}
+              aria-label="Puzzle source"
+            >
+              <option value="tonni">Tonni (custom)</option>
+              <option value="nyt">NYT (personal use)</option>
             </select>
           </label>
-        ) : (
-          <label className="flex flex-col gap-1 text-[var(--ink-muted)]">
-            Date
-            <input
-              type="date"
-              className="min-h-11 rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-3 text-[var(--ink)]"
-              value={nytDate}
-              onChange={(e) => setNytDate(e.target.value)}
-              aria-label="NYT Connections date"
-            />
-          </label>
-        )}
-      </div>
-
-      <p className="mt-2 text-center text-xs text-[var(--ink-muted)]">
-        {puzzle.title}
-        {puzzle.dateKey ? ` · ${puzzle.dateKey}` : ""}
-        {sourceLabel === "nyt" ? " · unofficial NYT" : " · Tonni pack"}
-      </p>
-
-      <div
-        className="sr-only"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {statusAnn}
-      </div>
-
-      <div className="relative mt-3 flex flex-1 flex-col">
-        <Toast message={toast} />
-
-        <div className="flex flex-col gap-2" aria-live="polite">
-          {displayGroups.map((group) => (
-            <FoundGroupRow key={groupKey(group)} group={group} />
-          ))}
+          {sourceLabel === "tonni" ? (
+            <label className="flex flex-col gap-1 text-[var(--ink-muted)]">
+              Pack puzzle
+              <select
+                className="min-h-11 max-w-[12rem] rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-3 text-[var(--ink)]"
+                value={puzzle.id}
+                onChange={(e) => setTonniPuzzle(e.target.value)}
+                aria-label="Tonni puzzle"
+              >
+                {tonniList.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label className="flex flex-col gap-1 text-[var(--ink-muted)]">
+              Date
+              <input
+                type="date"
+                className="min-h-11 rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-3 text-[var(--ink)]"
+                value={nytDate}
+                onChange={(e) => setNytDate(e.target.value)}
+                aria-label="NYT Connections date"
+              />
+            </label>
+          )}
         </div>
+
+        <p className="mt-2 text-center text-xs text-[var(--ink-muted)]">
+          {puzzle.title}
+          {puzzle.dateKey ? ` · ${puzzle.dateKey}` : ""}
+          {sourceLabel === "nyt" ? " · unofficial NYT" : " · Tonni pack"}
+        </p>
 
         <div
-          id="connections-board"
-          className={cn("mt-2 grid grid-cols-4 gap-2", shake && "conn-shake")}
-          role="group"
-          aria-label="Word board"
+          className="sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
         >
-          {board.map((word) => {
-            const n = normalizeWord(word);
-            const isSelected = selected.includes(n);
-            const selIndex = selected.indexOf(n);
-            return (
-              <button
-                key={word}
-                type="button"
-                className={cn(
-                  "conn-tile min-h-14 rounded-md px-1 text-center text-[0.7rem] font-bold uppercase leading-tight tracking-wide transition sm:min-h-16 sm:text-xs",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]",
-                  isSelected ? "conn-tile-selected" : "conn-tile-idle",
-                )}
-                aria-pressed={isSelected}
-                aria-label={
-                  isSelected
-                    ? `${word}, selected ${selIndex + 1} of ${selected.length}`
-                    : word
-                }
-                disabled={status !== "playing" || submitting}
-                onClick={() => toggleWord(word)}
-                style={{ touchAction: "manipulation" }}
-              >
-                {word}
-              </button>
-            );
-          })}
+          {statusAnn}
         </div>
 
-        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[var(--ink)]">
-          <span>Mistakes remaining:</span>
-          <div
-            className="flex gap-1.5"
-            aria-label={`${MAX_MISTAKES - mistakes} mistakes remaining`}
-          >
-            {mistakesRemainingDots(mistakes).map((on, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "h-3 w-3 rounded-full",
-                  on ? "bg-[var(--ink)]" : "bg-[var(--panel-border)]",
-                )}
-                aria-hidden
-              />
+        <div className="relative mt-3 flex flex-1 flex-col">
+          <Toast message={toast} />
+
+          <div className="flex flex-col gap-2" aria-live="polite">
+            {displayGroups.map((group) => (
+              <FoundGroupRow key={groupKey(group)} group={group} />
             ))}
           </div>
-        </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            className="conn-btn"
-            onClick={shuffleBoard}
-            disabled={status !== "playing"}
+          <div
+            id="connections-board"
+            className={cn("mt-2 grid grid-cols-4 gap-2", shake && "conn-shake")}
+            role="group"
+            aria-label="Word board"
           >
-            Shuffle
-          </button>
-          <button
-            type="button"
-            className="conn-btn"
-            onClick={deselectAll}
-            disabled={status !== "playing" || selected.length === 0}
-          >
-            Deselect
-          </button>
-          <button
-            type="button"
-            className="conn-btn conn-btn-primary"
-            onClick={submit}
-            disabled={
-              status !== "playing" ||
-              selected.length !== GROUP_SIZE ||
-              submitting
-            }
-          >
-            Submit
-          </button>
-        </div>
+            {board.map((word) => {
+              const n = normalizeWord(word);
+              const isSelected = selected.includes(n);
+              const selIndex = selected.indexOf(n);
+              return (
+                <button
+                  key={word}
+                  type="button"
+                  className={cn(
+                    "conn-tile min-h-14 rounded-md px-1 text-center text-[0.7rem] font-bold uppercase leading-tight tracking-wide transition sm:min-h-16 sm:text-xs",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]",
+                    isSelected ? "conn-tile-selected" : "conn-tile-idle",
+                  )}
+                  aria-pressed={isSelected}
+                  aria-label={
+                    isSelected
+                      ? `${word}, selected ${selIndex + 1} of ${selected.length}`
+                      : word
+                  }
+                  disabled={status !== "playing" || submitting}
+                  onClick={() => toggleWord(word)}
+                  style={{ touchAction: "manipulation" }}
+                >
+                  {word}
+                </button>
+              );
+            })}
+          </div>
 
-        {status !== "playing" && (
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[var(--ink)]">
+            <span>Mistakes remaining:</span>
+            <div
+              className="flex gap-1.5"
+              aria-label={`${MAX_MISTAKES - mistakes} mistakes remaining`}
+            >
+              {mistakesRemainingDots(mistakes).map((on, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "h-3 w-3 rounded-full",
+                    on ? "bg-[var(--ink)]" : "bg-[var(--panel-border)]",
+                  )}
+                  aria-hidden
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
-              className="conn-btn conn-btn-primary inline-flex items-center gap-2"
-              onClick={() => void share()}
+              className="conn-btn"
+              onClick={shuffleBoard}
+              disabled={status !== "playing"}
             >
-              <Share2 className="h-4 w-4" aria-hidden />
-              Share
+              Shuffle
+            </button>
+            <button
+              type="button"
+              className="conn-btn"
+              onClick={deselectAll}
+              disabled={status !== "playing" || selected.length === 0}
+            >
+              Deselect
+            </button>
+            <button
+              type="button"
+              className="conn-btn conn-btn-primary"
+              onClick={submit}
+              disabled={
+                status !== "playing" ||
+                selected.length !== GROUP_SIZE ||
+                submitting
+              }
+            >
+              Submit
             </button>
           </div>
-        )}
-      </div>
+
+          {status !== "playing" && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                className="conn-btn conn-btn-primary inline-flex items-center gap-2"
+                onClick={() => void share()}
+              >
+                <Share2 className="h-4 w-4" aria-hidden />
+                Share
+              </button>
+            </div>
+          )}
+        </div>
+      </AppShell>
 
       <HowToPlayConnections
         open={helpOpen}
@@ -536,7 +550,7 @@ export function ConnectionsGame() {
         mistakes={mistakes}
         onShare={() => void share()}
       />
-    </div>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChartNoAxesColumn, HelpCircle } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Board } from "./board";
 import { Keyboard } from "./keyboard";
@@ -269,72 +270,92 @@ export function WordleGame() {
 
   if (!hydrated) {
     return (
-      <div
-        className="flex flex-1 items-center justify-center text-[var(--ink-muted)]"
-        role="status"
-        aria-live="polite"
+      <AppShell
+        headerClassName="flex items-center justify-center px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:px-5"
+        header={
+          <p className="font-display text-2xl font-semibold tracking-tight text-[var(--ink)]">
+            Tonni Games
+          </p>
+        }
+        bodyClassName="flex items-center justify-center"
       >
-        Loading today&apos;s puzzle…
-      </div>
+        <div
+          className="text-[var(--ink-muted)]"
+          role="status"
+          aria-live="polite"
+        >
+          Loading today&apos;s puzzle…
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="relative flex min-h-dvh flex-1 flex-col overflow-x-hidden">
+    <>
       <a href="#wordle-board" className="skip-link">
         Skip to board
       </a>
+      <AppShell
+        headerClassName="flex items-center justify-between px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:px-5 sm:py-2.5"
+        bodyClassName="flex items-center justify-center overflow-y-auto px-1 py-2 sm:px-2 sm:py-6"
+        footerClassName="border-t-0 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1 sm:px-2"
+        header={
+          <>
+            <div className="flex items-center gap-0.5">
+              <Link
+                to="/"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
+              >
+                Home
+              </Link>
+              <button
+                type="button"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
+                onClick={() => setHelpOpen(true)}
+                aria-label="How to play"
+              >
+                <HelpCircle className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
 
-      <header className="flex items-center justify-between border-b border-[var(--panel-border)] px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:px-5 sm:py-2.5">
-        <div className="flex items-center gap-0.5">
-          <Link
-            to="/"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
-          >
-            Home
-          </Link>
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
-            onClick={() => setHelpOpen(true)}
-            aria-label="How to play"
-          >
-            <HelpCircle className="h-5 w-5" aria-hidden />
-          </button>
+            <div className="text-center">
+              <p className="font-display text-2xl leading-none font-semibold tracking-tight text-[var(--ink)] sm:text-3xl">
+                Tonni Games
+              </p>
+              <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-[var(--accent-brand)] uppercase">
+                Wordle · #{getPuzzleNumber(dateKey)}
+                {sourceLabel === "nyt" ? " · test source" : ""}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-0.5">
+              <ThemeToggle />
+              <button
+                type="button"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
+                onClick={() => setStatsOpen(true)}
+                aria-label="Statistics"
+              >
+                <ChartNoAxesColumn className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+          </>
+        }
+        footer={
+          <Keyboard
+            letterStates={letterStates}
+            onKey={onKey}
+            disabled={status !== "playing" || revealingRow !== null}
+          />
+        }
+      >
+        <Toast message={toast} />
+        <div className="sr-only" aria-live="polite" aria-atomic="true">
+          {statusAnn}
         </div>
-
-        <div className="text-center">
-          <p className="font-display text-2xl leading-none font-semibold tracking-tight text-[var(--ink)] sm:text-3xl">
-            Tonni Games
-          </p>
-          <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-[var(--accent-brand)] uppercase">
-            Wordle · #{getPuzzleNumber(dateKey)}
-            {sourceLabel === "nyt" ? " · test source" : ""}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-0.5">
-          <ThemeToggle />
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-brand)]"
-            onClick={() => setStatsOpen(true)}
-            aria-label="Statistics"
-          >
-            <ChartNoAxesColumn className="h-5 w-5" aria-hidden />
-          </button>
-        </div>
-      </header>
-
-      <Toast message={toast} />
-      <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {statusAnn}
-      </div>
-
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-between gap-2 px-1 py-2 sm:gap-4 sm:px-2 sm:py-6">
         <div
           id="wordle-board"
-          className="flex min-h-0 w-full flex-1 items-center justify-center overflow-x-hidden overflow-y-auto"
+          className="flex w-full items-center justify-center"
           tabIndex={-1}
         >
           <Board
@@ -345,15 +366,7 @@ export function WordleGame() {
             shakeRow={shakeRow}
           />
         </div>
-
-        <div className="w-full shrink-0 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
-          <Keyboard
-            letterStates={letterStates}
-            onKey={onKey}
-            disabled={status !== "playing" || revealingRow !== null}
-          />
-        </div>
-      </main>
+      </AppShell>
 
       <StatsDialog
         open={statsOpen}
@@ -365,6 +378,6 @@ export function WordleGame() {
         puzzleNumber={getPuzzleNumber(dateKey)}
       />
       <HowToPlayDialog open={helpOpen} onOpenChange={setHelpOpen} />
-    </div>
+    </>
   );
 }

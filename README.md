@@ -65,7 +65,7 @@ Browser CORS blocks direct `nytimes.com` calls, so the client hits same-origin `
 Open **Themes** from home (`/themes`) or the palette icon in game headers. Built-ins:
 
 | Id | Name | Notes |
-| --- | --- | --- |
+| --- | --- |
 | `system` | System | Classic by day, Midnight by night (`prefers-color-scheme`) |
 | `classic` | Classic | Tonni default light |
 | `midnight` | Midnight | Tonni dark |
@@ -73,6 +73,8 @@ Open **Themes** from home (`/themes`) or the palette icon in game headers. Built
 | `meadow` | Meadow | Warm parchment + moss/ochre |
 
 Selection is stored in `localStorage` under `tonni-theme-v2` (migrates legacy `tonni-theme-v1`). Games read CSS variables (`--background`, `--tile-correct`, `--conn-yellow`, …) — not hardcoded colors. Connections difficulty colors are `--conn-*` tokens in the theme registry.
+
+Theme rows use **static sizes** (no layout shift when selecting). Shared **`AppShell`** anchors headers (and Wordle’s keyboard footer); only the body pane scrolls.
 
 ### Extending themes
 
@@ -111,7 +113,7 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 Workflow: `.github/workflows/deploy-vercel.yml`.
 
 | Job | When | What |
-| --- | --- | --- |
+| --- | --- |
 | `build` | PRs + `main` | `pnpm test` + `pnpm build` |
 | **Verify Vercel build** (`vercel-build`) | PRs + `main` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
 | **Deploy production (hook)** | `push` to `main` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). Skipped on PRs. |
@@ -119,7 +121,7 @@ Workflow: `.github/workflows/deploy-vercel.yml`.
 ### Secrets
 
 | Secret | Required? | Notes |
-| --- | --- | --- |
+| --- | --- |
 | `VERCEL_DEPLOY_HOOK_URL` | Optional | Overrides the hardcoded production Deploy Hook. Prefer this if the hook is rotated. |
 | `VERCEL_TOKEN` | **Not used by current GHA** | Past tokens authenticate but **404 / cannot read project settings** for `tonni-games` (`vercel pull` → “Could not retrieve Project Settings”). Do **not** rely on CLI deploy until rotated. |
 | `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` | Optional (CLI only) | Team `team_xNSXW3QfytHiY0cKnRgj222W` (`ferrisweils-projects`), project `prj_xpylCQ0S9SSuj8DYmOsctzSp3emH`. |
