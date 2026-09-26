@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { ChartNoAxesColumn, HelpCircle } from "lucide-react";
 import { Board } from "./board";
 import { Keyboard } from "./keyboard";
@@ -200,22 +199,14 @@ export function WordleGame() {
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <header className="flex items-center justify-between border-b border-[var(--panel-border)] px-3 py-2.5 sm:px-5">
-        <div className="flex items-center gap-1">
-          <Link
-            to="/"
-            className="rounded-md px-2 py-2 text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase hover:bg-[var(--key-bg)] hover:text-[var(--ink)]"
-          >
-            Home
-          </Link>
-          <button
-            type="button"
-            className="rounded-md p-2 text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)]"
-            onClick={() => setHelpOpen(true)}
-            aria-label="How to play"
-          >
-            <HelpCircle className="h-5 w-5" />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="rounded-md p-2 text-[var(--ink-muted)] hover:bg-[var(--key-bg)] hover:text-[var(--ink)]"
+          onClick={() => setHelpOpen(true)}
+          aria-label="How to play"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </button>
 
         <div className="text-center">
           <p className="font-display text-2xl leading-none font-semibold tracking-tight text-[var(--ink)] sm:text-3xl">
