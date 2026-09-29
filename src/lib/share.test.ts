@@ -11,7 +11,7 @@ describe("buildShareText", () => {
     });
     expect(share.clipboard).toContain("Tonni Games Wordle #42 2/6");
     expect(share.emojiGrid.split("\n")).toHaveLength(2);
-    expect(share.emojiGrid).toMatch(/[🟩🟨⬛]/);
+    expect(share.emojiGrid).toMatch(/[🟩🟨⬛]/u);
     expect(share.plainSummary).toContain("Tonni Wordle #42 — 2/6");
     expect(share.plainSummary).toMatch(/Row 1:/);
     expect(share.plainSummary).toMatch(/correct|present|absent/);

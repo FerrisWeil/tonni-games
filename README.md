@@ -10,6 +10,8 @@ Vite + React + TypeScript · Tailwind · pnpm
 
 ## Run
 
+Run `make` (or `make help`) to see the available commands.
+
 ```bash
 pnpm install
 pnpm dev
