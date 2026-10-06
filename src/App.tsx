@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AccountPage } from "@/pages/account";
 import { ConnectionsPage } from "@/pages/connections";
 import { HomePage } from "@/pages/home";
+import { MastermindPage } from "@/pages/mastermind";
 import { ThemesPage } from "@/pages/themes";
 import { WordlePage } from "@/pages/wordle";
 import { WordleBuilderPage } from "@/pages/wordle-builder";
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/wordle/builder" element={<WordleBuilderPage />} />
             <Route path="/w/:code" element={<WordleCustomPlayPage />} />
             <Route path="/connections" element={<ConnectionsPage />} />
+            <Route path="/mastermind" element={<MastermindPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
