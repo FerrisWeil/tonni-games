@@ -1,7 +1,8 @@
 name: Deploy to Vercel
 
-# ADR 0025 / 0027: production promote only on push to master / workflow_dispatch.
-# PRs still run build + Verify Vercel build (≠ deploy). main is removed.
+# ADR 0025 / 0027: AUTO-deploy production on push to master; workflow_dispatch also OK.
+# PRs still run build + Verify Vercel build (≠ deploy). Never deploy on pull_request.
+# Tonni-games-dev is a separate on-demand workflow (deploy-dev.yml).
 on:
   push:
     branches: [master]
@@ -157,9 +158,8 @@ jobs:
           ferrisweils-projects / project tonni-games (Full Account or the project).
           EOF
 
-  # Production promote only — never on pull_request (ADR 0025).
-  # Do NOT use vercel CLI here: repo VERCEL_TOKEN authenticates but returns
-  # "User not found" / cannot read project settings (404). Hook-only path.
+  # AUTO production promote on master push + workflow_dispatch — never on pull_request (ADR 0025).
+  # Prefer Deploy Hook (VERCEL_DEPLOY_HOOK_URL). Do NOT use vercel CLI (broken token scope).
   deploy:
     name: Deploy production (hook)
     needs: [build, vercel-build]

@@ -180,11 +180,15 @@ Both use the **same Supabase backend/login** for now (`VITE_SUPABASE_URL` + `VIT
 
 ### Production — `.github/workflows/deploy-vercel.yml` (ADR 0025)
 
+**Auto-deploy:** every merge / `push` to **`master`** promotes production via the Deploy Hook. Manual **Run workflow** (`workflow_dispatch`) is also OK. **No** PR or preview deploys (Hobby thrift). Tonni-games-dev stays on-demand only (below).
+
 | Job | When | What |
 | --- | --- | --- |
 | `build` | PRs + `master` | `pnpm test` + `pnpm build` |
 | **Verify Vercel build** (`vercel-build`) | PRs + `master` | Gates merges: validates `vercel.json`, runs the same install/build commands Vercel uses, asserts `dist/`, typechecks `api/**` serverless routes. **Does not** call `vercel pull` / `vercel build` or promote production. |
-| **Deploy production (hook)** | `push` to `master` or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). **Never** on `pull_request`. |
+| **Deploy production (hook)** | **`push` to `master`** or `workflow_dispatch` | Triggers the Vercel **Deploy Hook** (build+promote on Vercel). **Never** on `pull_request`. |
+
+Vercel project settings for prod: **Production Branch = `master`**, previews **disabled**, Git auto-deploys off (`git.deploymentEnabled: false` in `vercel.json`) so promote stays Hook-only from GHA.
 
 #### Manual prod deploy (Taylor)
 
@@ -193,9 +197,9 @@ Both use the **same Supabase backend/login** for now (`VITE_SUPABASE_URL` + `VIT
 3. Choose branch **`master`**, then **Run workflow**.
 4. Wait for `build` + **Verify Vercel build** + **Deploy production (hook)**. The hook only queues the Vercel job; check the [Vercel dashboard](https://vercel.com/ferrisweils-projects/tonni-games) for READY.
 
-Merging a PR into **`master`** also runs the Deploy Hook once (same as above). PR branches do **not** deploy production.
+Merging a PR into **`master`** **auto-runs** the Deploy Hook (same path). PR branches do **not** deploy production.
 
-After the `main` → `master` rename: recreate the Deploy Hook for branch **`master`** under Vercel → Project → Settings → Git → Deploy Hooks, then set repo secret `VERCEL_DEPLOY_HOOK_URL` to the new URL.
+**Secret:** set repo secret `VERCEL_DEPLOY_HOOK_URL` to the Deploy Hook for branch **`master`** (Vercel → Project → Settings → Git → Deploy Hooks). The workflow falls back to the known master hook if the secret is unset; prefer the secret so rotations stick.
 
 ### Deploy to Dev — `.github/workflows/deploy-dev.yml` (ADR 0026)
 
