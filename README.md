@@ -21,16 +21,17 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 | Route | What |
 | --- | --- |
-| `/` | Home — Wordle, Builder, Connections, Themes + Account |
+| `/` | Home — Wordle, Builder, Connections, Mastermind, Themes + Account |
 | `/account` | Sign in (Google / magic link) or account + sign out |
 | `/themes` | Built-in theme picker (persists) |
 | `/wordle` | Daily Wordle |
 | `/wordle/builder` | Create a custom Wordle + share link |
 | `/w/:code` | Play a custom Wordle from an encoded share code |
 | `/connections` | Playable Connections |
+| `/mastermind` | Classic Mastermind (Easy / Medium / Hard) |
 
 ```bash
-pnpm test     # unit tests (Wordle + Connections + theme)
+pnpm test     # unit tests (Wordle + Connections + Mastermind + theme)
 pnpm build    # production → dist/
 pnpm preview  # serve production build
 ```
@@ -53,6 +54,18 @@ Default source is **Tonni custom packs** (`src/data/connections/` + registry in 
 NYT uses same-origin `/api/connections-nyt/{YYYY-MM-DD}` (Vite proxy in dev; Vercel serverless in prod). Soft fallback to Tonni if the fetch fails. Personal/family non‑monetized use only (ADR 0009 / 0013) — not affiliated with The New York Times.
 
 Add more custom packs by appending to `CONNECTION_PACKS` in `src/lib/connections/packs.ts`.
+
+## Mastermind
+
+Classic code-breaking at `/mastermind`. Choose **Easy / Medium / Hard** first, then play.
+
+| Difficulty | Code length | Colors | Max guesses | Duplicates |
+| --- | --- | --- | --- | --- |
+| Easy | 4 | 4 | 12 | Off |
+| Medium | 4 | 6 | 10 | On |
+| Hard | 5 | 8 | 8 | On |
+
+Feedback keys: **exact** (right color + position) then **near** (right color, wrong position) — counts only, not position-aligned. Peg / key colors use theme CSS variables (`--mm-peg-*`, `--mm-exact`, `--mm-near`).
 
 ## Wordle Builder
 
@@ -129,13 +142,16 @@ Vitest unit tests (`pnpm test`) cover Wordle evaluation, theme registry / resolv
 | `src/pages/wordle-builder.tsx` | Custom Wordle builder |
 | `src/pages/wordle-custom-play.tsx` | Play encoded share codes |
 | `src/pages/connections.tsx` | Connections (`/connections`) |
+| `src/pages/mastermind.tsx` | Mastermind (`/mastermind`) |
 | `src/components/app-shell.tsx` | Anchored header + body scroll |
 | `src/components/auth-context.tsx` | Supabase session provider |
 | `src/lib/supabase.ts` | Supabase client (null if env missing) |
 | `supabase/migrations/` | Profiles (+ later packs) SQL |
 | `src/components/wordle/` | Wordle UI |
 | `src/components/connections/` | Connections UI |
+| `src/components/mastermind/` | Mastermind UI |
 | `src/lib/connections/` | Logic, NYT parse, packs loader, share |
+| `src/lib/mastermind/` | Mastermind logic, storage, types |
 | `src/data/connections/` | Tonni-authored puzzle packs |
 | `api/connections-nyt/[date].ts` | Vercel proxy for NYT Connections |
 | `api/wordle-nyt/[date].ts` | Vercel proxy for NYT Wordle |
