@@ -195,6 +195,14 @@ export function MastermindGame() {
   );
 
   useEffect(() => {
+    const prev = document.title;
+    document.title = "Tonni Games — Mastermind";
+    return () => {
+      document.title = prev;
+    };
+  }, []);
+
+  useEffect(() => {
     if (phase !== "play") return;
     boardEndRef.current?.scrollIntoView({
       behavior: prefersReducedMotion() ? "auto" : "smooth",
@@ -207,44 +215,20 @@ export function MastermindGame() {
   const placeColor = useCallback(
     (color: PegColor) => {
       if (!cfg || status !== "playing" || !difficulty) return;
-      setCurrentPegs((prev) => {
-        const next = [...prev];
-        const slot =
-          next[activeSlot] === null
-            ? activeSlot
-            : next.findIndex((p) => p === null);
-        const target = slot === -1 ? activeSlot : slot;
-        next[target] = color;
-        const following = next.findIndex((p, i) => i > target && p === null);
-        setActiveSlot(following === -1 ? Math.min(target + 1, cfg.codeLength - 1) : following);
-        persist({
-          difficulty,
-          secret,
-          guesses,
-          currentPegs: next,
-          status,
-        });
-        return next;
-      });
-    },
-    [activeSlot, cfg, difficulty, guesses, persist, secret, status],
-  );
-
-  const clearSlot = useCallback(() => {
-    if (!cfg || status !== "playing" || !difficulty) return;
-    setCurrentPegs((prev) => {
-      const next = [...prev];
-      let target = activeSlot;
-      if (next[target] === null) {
-        for (let i = target - 1; i >= 0; i--) {
-          if (next[i] !== null) {
-            target = i;
-            break;
-          }
-        }
-      }
-      next[target] = null;
-      setActiveSlot(target);
+      const next = [...currentPegs];
+      const slot =
+        next[activeSlot] === null
+          ? activeSlot
+          : next.findIndex((p) => p === null);
+      const target = slot === -1 ? activeSlot : slot;
+      next[target] = color;
+      const following = next.findIndex((p, i) => i > target && p === null);
+      const nextActive =
+        following === -1
+          ? Math.min(target + 1, cfg.codeLength - 1)
+          : following;
+      setCurrentPegs(next);
+      setActiveSlot(nextActive);
       persist({
         difficulty,
         secret,
@@ -252,9 +236,51 @@ export function MastermindGame() {
         currentPegs: next,
         status,
       });
-      return next;
+    },
+    [
+      activeSlot,
+      cfg,
+      currentPegs,
+      difficulty,
+      guesses,
+      persist,
+      secret,
+      status,
+    ],
+  );
+
+  const clearSlot = useCallback(() => {
+    if (!cfg || status !== "playing" || !difficulty) return;
+    const next = [...currentPegs];
+    let target = activeSlot;
+    if (next[target] === null) {
+      for (let i = target - 1; i >= 0; i--) {
+        if (next[i] !== null) {
+          target = i;
+          break;
+        }
+      }
+    }
+    next[target] = null;
+    setCurrentPegs(next);
+    setActiveSlot(target);
+    persist({
+      difficulty,
+      secret,
+      guesses,
+      currentPegs: next,
+      status,
     });
-  }, [activeSlot, cfg, difficulty, guesses, persist, secret, status]);
+  }, [
+    activeSlot,
+    cfg,
+    currentPegs,
+    difficulty,
+    guesses,
+    persist,
+    secret,
+    status,
+  ]);
 
   const submitGuess = useCallback(() => {
     if (!cfg || !difficulty || status !== "playing") return;
