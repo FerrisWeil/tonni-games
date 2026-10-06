@@ -45,6 +45,17 @@ export interface ThemeTokens {
   connTileSelected: string;
   connTileSelectedInk: string;
   connTileInk: string;
+  /** Mastermind pegs + feedback keys (ADR 0028) */
+  mmPeg0: string;
+  mmPeg1: string;
+  mmPeg2: string;
+  mmPeg3: string;
+  mmPeg4: string;
+  mmPeg5: string;
+  mmPeg6: string;
+  mmPeg7: string;
+  mmExact: string;
+  mmNear: string;
 }
 
 export interface ThemePreview {
@@ -92,6 +103,16 @@ const CLASSIC_TOKENS: ThemeTokens = {
   connTileSelected: "#5a6b61",
   connTileSelectedInk: "#f4f7f2",
   connTileInk: "#1c2420",
+  mmPeg0: "#c44b4b",
+  mmPeg1: "#3d6fb8",
+  mmPeg2: "#3a8f5c",
+  mmPeg3: "#c9a227",
+  mmPeg4: "#d4782e",
+  mmPeg5: "#a8558a",
+  mmPeg6: "#2a9a9a",
+  mmPeg7: "#8b6914",
+  mmExact: "#1c2420",
+  mmNear: "#f4f7f2",
 };
 
 const MIDNIGHT_TOKENS: ThemeTokens = {
@@ -124,6 +145,16 @@ const MIDNIGHT_TOKENS: ThemeTokens = {
   connTileSelected: "#9aaba0",
   connTileSelectedInk: "#121a16",
   connTileInk: "#e8efe6",
+  mmPeg0: "#e06060",
+  mmPeg1: "#5a8fd4",
+  mmPeg2: "#5cb87f",
+  mmPeg3: "#d4ae3a",
+  mmPeg4: "#e08a40",
+  mmPeg5: "#c070a0",
+  mmPeg6: "#40b0b0",
+  mmPeg7: "#b08a40",
+  mmExact: "#e8efe6",
+  mmNear: "#2a3530",
 };
 
 const HIGH_CONTRAST_TOKENS: ThemeTokens = {
@@ -156,6 +187,16 @@ const HIGH_CONTRAST_TOKENS: ThemeTokens = {
   connTileSelected: "#ffffff",
   connTileSelectedInk: "#0a0a0a",
   connTileInk: "#ffffff",
+  mmPeg0: "#ff1744",
+  mmPeg1: "#2979ff",
+  mmPeg2: "#00c853",
+  mmPeg3: "#ffd600",
+  mmPeg4: "#ff9100",
+  mmPeg5: "#f50057",
+  mmPeg6: "#00e5ff",
+  mmPeg7: "#a1887f",
+  mmExact: "#ffffff",
+  mmNear: "#424242",
 };
 
 /** Playful warm moss / ochre — not purple AI-slop. */
@@ -189,6 +230,16 @@ const MEADOW_TOKENS: ThemeTokens = {
   connTileSelected: "#6e6454",
   connTileSelectedInk: "#faf6ee",
   connTileInk: "#2a2418",
+  mmPeg0: "#b84a3c",
+  mmPeg1: "#4a6fa5",
+  mmPeg2: "#5a8f3c",
+  mmPeg3: "#c47a2c",
+  mmPeg4: "#c96a28",
+  mmPeg5: "#9a5a78",
+  mmPeg6: "#3a8a7a",
+  mmPeg7: "#7a5a30",
+  mmExact: "#2a2418",
+  mmNear: "#faf6ee",
 };
 
 /** Built-in themes. Order = picker display order. */
@@ -305,4 +356,14 @@ export const TOKEN_CSS_VARS: Record<keyof ThemeTokens, string> = {
   connTileSelected: "--conn-tile-selected",
   connTileSelectedInk: "--conn-tile-selected-ink",
   connTileInk: "--conn-tile-ink",
+  mmPeg0: "--mm-peg-0",
+  mmPeg1: "--mm-peg-1",
+  mmPeg2: "--mm-peg-2",
+  mmPeg3: "--mm-peg-3",
+  mmPeg4: "--mm-peg-4",
+  mmPeg5: "--mm-peg-5",
+  mmPeg6: "--mm-peg-6",
+  mmPeg7: "--mm-peg-7",
+  mmExact: "--mm-exact",
+  mmNear: "--mm-near",
 };
