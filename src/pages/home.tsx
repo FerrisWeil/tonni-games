@@ -80,7 +80,7 @@ export function HomePage() {
         </Link>
         <Link
           to="/themes"
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-6 py-3 text-sm font-semibold tracking-wide text-[var(--ink)] transition hover:bg-[var(--accent-brand)]/10 active:scale-[0.98]"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--panel-border)] bg-[var(--panel)] px-6 py-3 text-sm font-semibold tracking-wide text-[var(--ink)] transition hover:border-[var(--ink-muted)] active:scale-[0.98]"
           style={{ touchAction: "manipulation" }}
         >
           Themes
